@@ -39,8 +39,11 @@ const userSchema = new mongoose.Schema(
     },
     employeeId: {
       type: String,
-      required: [true, 'Employee ID is required'],
+      required: function() {
+        return this.role === 'employee' || this.role === 'manager';
+      },
       unique: true,
+      sparse: true, // Allow null values for unique index
       uppercase: true,
     },
     department: {
