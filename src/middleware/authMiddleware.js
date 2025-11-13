@@ -72,3 +72,20 @@ exports.authorize = (...roles) => {
     next();
   };
 };
+
+// ============================================
+// Admin Only - Shortcut for admin authorization
+// ============================================
+exports.adminOnly = (req, res, next) => {
+  if (!req.user) {
+    res.status(401);
+    throw new Error('Not authorized');
+  }
+
+  if (req.user.role !== 'admin') {
+    res.status(403);
+    throw new Error('Access denied. Admin privileges required.');
+  }
+
+  next();
+};

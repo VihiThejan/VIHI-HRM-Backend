@@ -7,7 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('../middleware/asyncHandler');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 const reportGenerator = require('../utils/reportGenerator');
 
 // ============================================
@@ -93,7 +93,7 @@ router.get(
 router.get(
   '/team/csv',
   protect,
-  admin,
+  adminOnly,
   asyncHandler(async (req, res) => {
     const { startDate, endDate, department } = req.query;
 
@@ -114,7 +114,7 @@ router.get(
 router.get(
   '/team/pdf',
   protect,
-  admin,
+  adminOnly,
   asyncHandler(async (req, res) => {
     const { startDate, endDate, department } = req.query;
 
