@@ -1,6 +1,8 @@
 import { Response, NextFunction } from 'express';
 import jwt, { Secret } from 'jsonwebtoken';
 import Employee from '../models/Employee.model';
+import User from '../models/User.model';
+import Role from '../models/Role.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 // Generate JWT Token
@@ -57,7 +59,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
   }
 };
 
-// @desc    Login employee
+// @desc    Login employee or user
 // @route   POST /api/auth/login
 // @access  Public
 export const login = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -72,7 +74,57 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
       });
     }
 
-    // Find employee and include password
+    // Try to find in User model first (RBAC users)
+    let user = await User.findOne({ email }).select('+password');
+    
+    if (user) {
+      // RBAC user login
+      const isMatch = await user.comparePassword(password);
+      
+      if (!isMatch) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Invalid credentials',
+        });
+      }
+
+      // Check if user is active
+      if (user.status !== 'active') {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Account is inactive or suspended',
+        });
+      }
+
+      // Fetch roles and permissions
+      const roles = await Role.find({ _id: { $in: user.roleIds } });
+      const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
+
+      // Update last login
+      user.lastLogin = new Date();
+      await user.save();
+
+      const token = generateToken(user._id.toString());
+
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          token,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            roleIds: user.roleIds,
+            roles: roles.map(r => ({ id: r._id, name: r.name })),
+            permissions: permissionKeys,
+            status: user.status,
+            employeeId: user.employeeId,
+          },
+        },
+      });
+    }
+
+    // Fallback to Employee model for backward compatibility
     const employee = await Employee.findOne({ email }).select('+password');
     
     if (!employee) {
@@ -92,6 +144,15 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
       });
     }
 
+    // Map old role system to permissions
+    const rolePermissionMap: { [key: string]: string[] } = {
+      admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
+      ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
+      manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
+      intern: ['view_dashboard', 'track_own_time', 'request_leave'],
+    };
+
     const token = generateToken(employee._id.toString());
 
     res.status(200).json({
@@ -103,6 +164,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           name: employee.name,
           email: employee.email,
           role: employee.role,
+          permissions: rolePermissionMap[employee.role] || [],
           department: employee.department,
           position: employee.position,
         },

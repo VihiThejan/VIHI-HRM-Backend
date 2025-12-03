@@ -18,6 +18,9 @@ import attendanceRoutes from './routes/attendance.routes';
 import payrollRoutes from './routes/payroll.routes';
 import performanceRoutes from './routes/performance.routes';
 import internRoutes from './routes/intern.routes';
+import permissionRoutes from './routes/permission.routes';
+import roleRoutes from './routes/role.routes';
+import userRoutes from './routes/user.routes';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
@@ -25,6 +28,9 @@ import { rateLimiter } from './middleware/rateLimiter.middleware';
 
 // Import cron jobs
 import './jobs/diaryGeneration.job';
+
+// Import seeding
+import { seedPermissionsAndRoles } from './scripts/seedRBAC';
 
 // Load environment variables
 dotenv.config();
@@ -40,6 +46,12 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
 connectDB();
+
+// Seed RBAC on startup
+seedPermissionsAndRoles().catch(err => {
+  logger.error('Failed to seed RBAC:', err);
+  // Don't exit, continue running the server
+});
 
 // Middleware
 app.use(helmet()); // Security headers
@@ -73,6 +85,11 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/interns', internRoutes);
 
+// Admin routes
+app.use('/api/admin/permissions', permissionRoutes);
+app.use('/api/admin/roles', roleRoutes);
+app.use('/api/admin/users', userRoutes);
+
 // 404 handler
 app.use((req: Request, res: Response) => {
   res.status(404).json({
@@ -92,7 +109,7 @@ app.listen(PORT, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err: Error) => {
   logger.error('Unhandled Rejection:', err);
-  process.exit(1);
+  // Don't exit the process, just log the error
 });
 
 export default app;
