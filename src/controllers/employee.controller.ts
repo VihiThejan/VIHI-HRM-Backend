@@ -75,11 +75,26 @@ export const getEmployee = async (req: AuthRequest, res: Response, next: NextFun
 // @access  Private (Admin/CEO)
 export const createEmployee = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const employee = await Employee.create(req.body);
+    // Generate temporary password (8 random characters)
+    const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase();
+    
+    const employeeData = {
+      ...req.body,
+      password: tempPassword,
+      passwordResetRequired: true, // Force password change on first login
+    };
+
+    const employee = await Employee.create(employeeData);
+
+    // Return employee data without password hash, but include temp password for admin
+    const employeeResponse = employee.toObject();
+    delete employeeResponse.password;
 
     res.status(201).json({
       status: 'success',
-      data: employee,
+      data: employeeResponse,
+      temporaryPassword: tempPassword, // Send this once to admin
+      message: 'Employee created. Please share the temporary password securely. User must change it on first login.',
     });
   } catch (error) {
     next(error);

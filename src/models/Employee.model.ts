@@ -13,6 +13,7 @@ export interface IEmployee extends Document {
   joinDate: Date;
   status: 'active' | 'inactive' | 'on-leave';
   role: 'admin' | 'ceo' | 'manager' | 'employee' | 'intern';
+  passwordResetRequired: boolean;
   avatar?: string;
   emergencyContact?: {
     name: string;
@@ -78,6 +79,10 @@ const EmployeeSchema: Schema = new Schema(
       type: String,
       enum: ['admin', 'ceo', 'manager', 'employee', 'intern'],
       default: 'employee',
+    },
+    passwordResetRequired: {
+      type: Boolean,
+      default: false,
     },
     avatar: String,
     emergencyContact: {
