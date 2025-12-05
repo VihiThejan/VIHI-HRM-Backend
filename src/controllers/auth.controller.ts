@@ -144,6 +144,16 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
       });
     }
 
+    // Check if password reset is required
+    if (employee.passwordResetRequired) {
+      return res.status(200).json({
+        status: 'success',
+        passwordResetRequired: true,
+        userId: employee._id,
+        message: 'Password reset required. Please change your password.',
+      });
+    }
+
     // Map old role system to permissions
     const rolePermissionMap: { [key: string]: string[] } = {
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
@@ -199,4 +209,80 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
     status: 'success',
     message: 'Logged out successfully',
   });
+};
+
+// @desc    Reset password (for first-time login)
+// @route   POST /api/auth/reset-password
+// @access  Public (with userId from login response)
+export const resetPassword = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { userId, currentPassword, newPassword } = req.body;
+
+    if (!userId || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide userId, current password and new password',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'New password must be at least 6 characters',
+      });
+    }
+
+    const employee = await Employee.findById(userId).select('+password +passwordResetRequired');
+
+    if (!employee) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Employee not found',
+      });
+    }
+
+    // Verify current password
+    const isMatch = await employee.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Update password and remove reset flag
+    employee.password = newPassword;
+    employee.passwordResetRequired = false;
+    await employee.save();
+
+    const token = generateToken(employee._id.toString());
+
+    // Map role to permissions
+    const rolePermissionMap: { [key: string]: string[] } = {
+      admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
+      ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
+      manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
+      intern: ['view_dashboard', 'track_own_time', 'request_leave'],
+    };
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password updated successfully',
+      data: {
+        token,
+        user: {
+          id: employee._id,
+          name: employee.name,
+          email: employee.email,
+          role: employee.role,
+          permissions: rolePermissionMap[employee.role] || [],
+          department: employee.department,
+          position: employee.position,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
