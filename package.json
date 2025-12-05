@@ -9,7 +9,10 @@
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts",
     "test": "jest --coverage",
-    "seed:admin": "ts-node src/scripts/createAdmin.ts"
+    "seed:admin": "ts-node src/scripts/createAdmin.ts",
+    "seed:rbac": "ts-node src/scripts/seedRBAC.ts",
+    "migrate:admin": "ts-node src/scripts/migrateAdmin.ts",
+    "create:rbac-admin": "ts-node src/scripts/createRBACAdmin.ts"
   },
   "keywords": ["hrm", "api", "express", "mongodb"],
   "author": "VIHI",
