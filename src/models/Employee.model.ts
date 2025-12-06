@@ -10,6 +10,9 @@ export interface IEmployee extends Document {
   department: string;
   position: string;
   salary: number;
+  staffId?: string;
+  nic?: string;
+  passportNo?: string;
   joinDate: Date;
   status: 'active' | 'inactive' | 'on-leave';
   role: 'admin' | 'ceo' | 'manager' | 'employee' | 'intern';
@@ -63,8 +66,21 @@ const EmployeeSchema: Schema = new Schema(
     },
     salary: {
       type: Number,
-      required: [true, 'Salary is required'],
+      required: false,
       min: 0,
+    },
+    staffId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    nic: {
+      type: String,
+      trim: true,
+    },
+    passportNo: {
+      type: String,
+      trim: true,
     },
     joinDate: {
       type: Date,
