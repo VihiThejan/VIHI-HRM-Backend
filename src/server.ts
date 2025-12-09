@@ -59,7 +59,7 @@ app.use(helmet()); // Security headers
 // CORS configuration - support multiple origins
 const allowedOrigins = process.env.CORS_ORIGIN 
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000', 'https://vihi-hrm-backend.pages.dev'];
+  : ['http://localhost:3000', 'https://vihi-hrm-core.pages.dev'];
 
 app.use(cors({
   origin: (origin, callback) => {
