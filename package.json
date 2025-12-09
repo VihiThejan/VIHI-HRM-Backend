@@ -12,7 +12,9 @@
     "seed:admin": "ts-node src/scripts/createAdmin.ts",
     "seed:rbac": "ts-node src/scripts/seedRBAC.ts",
     "migrate:admin": "ts-node src/scripts/migrateAdmin.ts",
-    "create:rbac-admin": "ts-node src/scripts/createRBACAdmin.ts"
+    "create:rbac-admin": "ts-node src/scripts/createRBACAdmin.ts",
+    "add:staff-ids": "ts-node src/scripts/addStaffIds.ts",
+    "reset:admin-password": "ts-node src/scripts/resetAdminPassword.ts"
   },
   "keywords": ["hrm", "api", "express", "mongodb"],
   "author": "VIHI",

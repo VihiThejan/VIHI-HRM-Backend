@@ -72,7 +72,8 @@ const EmployeeSchema: Schema = new Schema(
     staffId: {
       type: String,
       unique: true,
-      sparse: true,
+      sparse: true, // Allows null values but enforces uniqueness for non-null
+      trim: true,
     },
     nic: {
       type: String,
@@ -125,5 +126,10 @@ EmployeeSchema.pre('save', async function (next) {
 EmployeeSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Indexes for faster queries
+EmployeeSchema.index({ staffId: 1 });
+EmployeeSchema.index({ email: 1 });
+EmployeeSchema.index({ status: 1 });
 
 export default mongoose.model<IEmployee>('Employee', EmployeeSchema);

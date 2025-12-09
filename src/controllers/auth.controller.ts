@@ -64,69 +64,19 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 // @access  Public
 export const login = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, password } = req.body;
+    const { staffId, password } = req.body;
 
-    // Check if email and password exist
-    if (!email || !password) {
+    // Check if staffId and password exist
+    if (!staffId || !password) {
       return res.status(400).json({
         status: 'error',
-        message: 'Please provide email and password',
+        message: 'Please provide staff ID and password',
       });
     }
 
-    // Try to find in User model first (RBAC users)
-    let user = await User.findOne({ email }).select('+password');
-    
-    if (user) {
-      // RBAC user login
-      const isMatch = await user.comparePassword(password);
-      
-      if (!isMatch) {
-        return res.status(401).json({
-          status: 'error',
-          message: 'Invalid credentials',
-        });
-      }
+    // Try to find in Employee model by staffId
+    const employee = await Employee.findOne({ staffId }).select('+password');
 
-      // Check if user is active
-      if (user.status !== 'active') {
-        return res.status(403).json({
-          status: 'error',
-          message: 'Account is inactive or suspended',
-        });
-      }
-
-      // Fetch roles and permissions
-      const roles = await Role.find({ _id: { $in: user.roleIds } });
-      const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
-
-      // Update last login
-      user.lastLogin = new Date();
-      await user.save();
-
-      const token = generateToken(user._id.toString());
-
-      return res.status(200).json({
-        status: 'success',
-        data: {
-          token,
-          user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            roleIds: user.roleIds,
-            roles: roles.map(r => ({ id: r._id, name: r.name })),
-            permissions: permissionKeys,
-            status: user.status,
-            employeeId: user.employeeId,
-          },
-        },
-      });
-    }
-
-    // Fallback to Employee model for backward compatibility
-    const employee = await Employee.findOne({ email }).select('+password');
-    
     if (!employee) {
       return res.status(401).json({
         status: 'error',
@@ -154,6 +104,57 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
       });
     }
 
+    // Check if employee is active
+    if (employee.status !== 'active') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Account is inactive or on leave',
+      });
+    }
+
+    // Try to find associated User for RBAC
+    let user = await User.findOne({ employeeId: employee._id }).select('+password');
+    
+    if (user) {
+      // User has RBAC roles, use those
+      // Check if user is active
+      if (user.status !== 'active') {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Account is inactive or suspended',
+        });
+      }
+
+      // Fetch roles and permissions
+      const roles = await Role.find({ _id: { $in: user.roleIds } });
+      const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
+
+      // Update last login
+      user.lastLogin = new Date();
+      await user.save();
+
+      const token = generateToken(employee._id.toString());
+
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          token,
+          user: {
+            id: employee._id,
+            name: employee.name,
+            email: employee.email,
+            staffId: employee.staffId,
+            roleIds: user.roleIds,
+            roles: roles.map(r => ({ id: r._id, name: r.name })),
+            permissions: permissionKeys,
+            status: user.status,
+            department: employee.department,
+            position: employee.position,
+          },
+        },
+      });
+    }
+
     // Map old role system to permissions
     const rolePermissionMap: { [key: string]: string[] } = {
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
@@ -173,6 +174,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           id: employee._id,
           name: employee.name,
           email: employee.email,
+          staffId: employee.staffId,
           role: employee.role,
           permissions: rolePermissionMap[employee.role] || [],
           department: employee.department,
@@ -190,11 +192,66 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 // @access  Private
 export const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const employee = await Employee.findById(req.user.id);
+    // Find employee by ID
+    const employee = await Employee.findById(req.user.id).select('-password');
+
+    if (!employee) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Employee not found',
+      });
+    }
+
+    // Try to find associated User for RBAC
+    const user = await User.findOne({ employeeId: employee._id });
+
+    let responseData: any = {
+      _id: employee._id,
+      name: employee.name,
+      email: employee.email,
+      staffId: employee.staffId,
+      status: employee.status,
+      createdAt: employee.createdAt,
+      employeeId: {
+        _id: employee._id,
+        position: employee.position,
+        department: employee.department,
+        phone: employee.phone,
+        address: employee.address,
+        joinDate: employee.joinDate,
+      }
+    };
+
+    if (user) {
+      // User has RBAC roles
+      const roles = await Role.find({ _id: { $in: user.roleIds } });
+      const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
+
+      responseData.roles = roles.map(r => ({
+        _id: r._id,
+        name: r.name,
+        description: r.description,
+      }));
+      responseData.permissions = permissionKeys;
+      responseData.status = user.status;
+      responseData.lastLogin = user.lastLogin;
+    } else {
+      // Legacy employee role system
+      const rolePermissionMap: { [key: string]: string[] } = {
+        admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
+        ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
+        manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
+        employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
+        intern: ['view_dashboard', 'track_own_time', 'request_leave'],
+      };
+
+      responseData.role = employee.role;
+      responseData.permissions = rolePermissionMap[employee.role] || [];
+    }
 
     res.status(200).json({
       status: 'success',
-      data: employee,
+      data: responseData,
     });
   } catch (error) {
     next(error);

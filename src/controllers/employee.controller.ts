@@ -2,6 +2,23 @@ import { Response, NextFunction } from 'express';
 import Employee from '../models/Employee.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 
+// Helper function to generate next staff ID
+const generateStaffId = async (): Promise<string> => {
+  const lastEmployee = await Employee.findOne({ staffId: { $exists: true, $ne: null } })
+    .sort({ staffId: -1 })
+    .limit(1);
+
+  let counter = 1;
+  if (lastEmployee && lastEmployee.staffId) {
+    const match = lastEmployee.staffId.match(/\d+$/);
+    if (match) {
+      counter = parseInt(match[0]) + 1;
+    }
+  }
+
+  return `VIHI${String(counter).padStart(3, '0')}`;
+};
+
 // @desc    Get all employees
 // @route   GET /api/employees
 // @access  Private
@@ -18,6 +35,7 @@ export const getEmployees = async (req: AuthRequest, res: Response, next: NextFu
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
+        { staffId: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -75,8 +93,13 @@ export const getEmployee = async (req: AuthRequest, res: Response, next: NextFun
 // @access  Private (Admin/CEO)
 export const createEmployee = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Generate temporary password (8 random characters)
-    const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase();
+    // Generate staff ID if not provided
+    if (!req.body.staffId) {
+      req.body.staffId = await generateStaffId();
+    }
+
+    // Use staff ID as the temporary password
+    const tempPassword = req.body.staffId;
     
     const employeeData = {
       ...req.body,
@@ -93,8 +116,8 @@ export const createEmployee = async (req: AuthRequest, res: Response, next: Next
     res.status(201).json({
       status: 'success',
       data: employeeResponse,
-      temporaryPassword: tempPassword, // Send this once to admin
-      message: 'Employee created. Please share the temporary password securely. User must change it on first login.',
+      temporaryPassword: tempPassword, // Send this once to admin (staff ID)
+      message: `Employee created. Staff ID: ${tempPassword}. Use this as the password for first login. User must change it on first login.`,
     });
   } catch (error) {
     next(error);

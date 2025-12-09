@@ -29,7 +29,7 @@ export const validateEmployee = [
 ];
 
 export const validateLogin = [
-  body('email').isEmail().withMessage('Valid email is required'),
+  body('staffId').notEmpty().withMessage('Staff ID is required'),
   body('password').notEmpty().withMessage('Password is required'),
 ];
 
