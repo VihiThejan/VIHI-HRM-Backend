@@ -8,6 +8,8 @@ import {
   downloadDiary,
   submitTracking,
   getAllTracking,
+  generateAIDiary,
+  generateAIFeedback,
 } from '../controllers/intern.controller';
 import { protect } from '../middleware/auth.middleware';
 import { requirePermission, requireAnyPermission } from '../middleware/permission.middleware';
@@ -28,6 +30,8 @@ router
 
 router.post('/:id/submit', validateId, requirePermission('track_own_time'), submitTracking);
 router.post('/:id/comments', validateId, requirePermission('comment_intern_diary'), addCeoComments);
+router.post('/:id/generate-diary', validateId, requireAnyPermission(['track_own_time', 'manage_interns']), generateAIDiary);
+router.post('/:id/generate-feedback', validateId, requirePermission('comment_intern_diary'), generateAIFeedback);
 router.get('/:id/diary', validateId, requireAnyPermission(['track_own_time', 'view_interns', 'manage_interns']), downloadDiary);
 
 export default router;

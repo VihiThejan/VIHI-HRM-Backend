@@ -12,7 +12,10 @@ export interface IInternTimeTracking extends Document {
   weekEndDate: Date;
   totalHours: number;
   tasks: IInternTask[];
+  aiGeneratedDiary?: string;
+  aiGeneratedFeedback?: string;
   ceoComments?: string;
+  supervisorComments?: string;
   diaryGenerated: boolean;
   diaryUrl?: string;
   status: 'active' | 'completed' | 'submitted';
@@ -60,7 +63,19 @@ const InternTimeTrackingSchema: Schema = new Schema(
       max: 40,
     },
     tasks: [InternTaskSchema],
+    aiGeneratedDiary: {
+      type: String,
+      trim: true,
+    },
+    aiGeneratedFeedback: {
+      type: String,
+      trim: true,
+    },
     ceoComments: {
+      type: String,
+      trim: true,
+    },
+    supervisorComments: {
       type: String,
       trim: true,
     },

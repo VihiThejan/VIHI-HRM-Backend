@@ -63,13 +63,29 @@ export const getEmployees = async (req: AuthRequest, res: Response, next: NextFu
     const total = await Employee.countDocuments(query);
     const employees = await Employee.find(query)
       .select('-password')
+      .populate('supervisor', 'name staffId designation position')
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
 
+    // For each employee, find interns they supervise
+    const employeesWithInterns = await Promise.all(
+      employees.map(async (employee) => {
+        const supervisedInterns = await Employee.find({ 
+          supervisor: employee._id,
+          position: 'Intern'
+        }).select('name staffId universityId');
+        
+        return {
+          ...employee.toObject(),
+          supervisedInterns: supervisedInterns.length > 0 ? supervisedInterns : undefined
+        };
+      })
+    );
+
     res.status(200).json({
       status: 'success',
-      data: employees,
+      data: employeesWithInterns,
       pagination: {
         total,
         page,
@@ -87,7 +103,9 @@ export const getEmployees = async (req: AuthRequest, res: Response, next: NextFu
 // @access  Private
 export const getEmployee = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const employee = await Employee.findById(req.params.id).select('-password');
+    const employee = await Employee.findById(req.params.id)
+      .select('-password')
+      .populate('supervisor', 'name staffId designation position');
 
     if (!employee) {
       return res.status(404).json({
@@ -96,9 +114,20 @@ export const getEmployee = async (req: AuthRequest, res: Response, next: NextFun
       });
     }
 
+    // Find interns supervised by this employee
+    const supervisedInterns = await Employee.find({ 
+      supervisor: employee._id,
+      position: 'Intern'
+    }).select('name staffId universityId');
+
+    const employeeWithInterns = {
+      ...employee.toObject(),
+      supervisedInterns: supervisedInterns.length > 0 ? supervisedInterns : undefined
+    };
+
     res.status(200).json({
       status: 'success',
-      data: employee,
+      data: employeeWithInterns,
     });
   } catch (error) {
     next(error);

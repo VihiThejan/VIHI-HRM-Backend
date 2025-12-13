@@ -23,11 +23,14 @@ export interface Employee {
   address: string;
   department: string;
   position: string;
+  designation?: string;
   salary: number;
   joinDate: Date;
   status: 'active' | 'inactive' | 'on-leave';
   role: UserRole;
   avatar?: string;
+  universityId?: string;
+  supervisor?: string | Employee;
 }
 
 // Leave Types
