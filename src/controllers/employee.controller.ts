@@ -2,9 +2,26 @@ import { Response, NextFunction } from 'express';
 import Employee from '../models/Employee.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 
-// Helper function to generate next staff ID
-const generateStaffId = async (): Promise<string> => {
-  const lastEmployee = await Employee.findOne({ staffId: { $exists: true, $ne: null } })
+// Helper function to generate department-based staff ID
+const generateStaffId = async (department: string): Promise<string> => {
+  // Map departments to prefixes
+  const departmentPrefixes: { [key: string]: string } = {
+    'HR': 'HR',
+    'Engineering': 'ENG',
+    'Sales': 'SAL',
+    'Marketing': 'MKT',
+    'Finance': 'FIN',
+    'Operations': 'OPS',
+    'IT': 'IT',
+    'Administration': 'ADM',
+  };
+
+  const prefix = departmentPrefixes[department] || 'EMP';
+
+  // Find the last employee with this department prefix
+  const lastEmployee = await Employee.findOne({ 
+    staffId: { $regex: `^${prefix}`, $exists: true, $ne: null } 
+  })
     .sort({ staffId: -1 })
     .limit(1);
 
@@ -16,7 +33,7 @@ const generateStaffId = async (): Promise<string> => {
     }
   }
 
-  return `VIHI${String(counter).padStart(3, '0')}`;
+  return `${prefix}${String(counter).padStart(6, '0')}`;
 };
 
 // @desc    Get all employees
@@ -93,19 +110,24 @@ export const getEmployee = async (req: AuthRequest, res: Response, next: NextFun
 // @access  Private (Admin/CEO)
 export const createEmployee = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Generate staff ID if not provided
-    if (!req.body.staffId) {
-      req.body.staffId = await generateStaffId();
-    }
+    // Always generate a new staff ID based on department
+    const staffId = await generateStaffId(req.body.department);
 
     // Use staff ID as the temporary password
-    const tempPassword = req.body.staffId;
+    const tempPassword = staffId;
     
     const employeeData = {
       ...req.body,
+      staffId: staffId, // Always use generated staffId
       password: tempPassword,
       passwordResetRequired: true, // Force password change on first login
     };
+
+    // Remove staffId from req.body to prevent conflicts
+    if (req.body.staffId && req.body.staffId === '') {
+      delete employeeData.staffId;
+      employeeData.staffId = staffId;
+    }
 
     const employee = await Employee.create(employeeData);
 
