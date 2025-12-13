@@ -9,10 +9,13 @@ export interface IEmployee extends Document {
   address: string;
   department: string;
   position: string;
+  designation?: string;
   salary: number;
   staffId?: string;
   nic?: string;
   passportNo?: string;
+  universityId?: string;
+  supervisor?: mongoose.Types.ObjectId;
   joinDate: Date;
   status: 'active' | 'inactive' | 'on-leave';
   role: 'admin' | 'ceo' | 'manager' | 'employee' | 'intern';
@@ -64,6 +67,10 @@ const EmployeeSchema: Schema = new Schema(
       type: String,
       required: [true, 'Position is required'],
     },
+    designation: {
+      type: String,
+      trim: true,
+    },
     salary: {
       type: Number,
       required: false,
@@ -82,6 +89,14 @@ const EmployeeSchema: Schema = new Schema(
     passportNo: {
       type: String,
       trim: true,
+    },
+    universityId: {
+      type: String,
+      trim: true,
+    },
+    supervisor: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employee',
     },
     joinDate: {
       type: Date,

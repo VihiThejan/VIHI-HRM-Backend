@@ -2,8 +2,9 @@ import { Response, NextFunction } from 'express';
 import InternTimeTracking from '../models/InternTimeTracking.model';
 import Employee from '../models/Employee.model';
 import { AuthRequest } from '../middleware/auth.middleware';
-import { startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, endOfWeek, getWeek, getYear } from 'date-fns';
 import { generateInternDiary } from '../utils/pdfGenerator';
+import { generateWeeklyDiary, generateSupervisorFeedback } from '../services/gemini.service';
 import path from 'path';
 
 // @desc    Add/Log task for intern
@@ -367,6 +368,131 @@ export const getAllTracking = async (req: AuthRequest, res: Response, next: Next
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Generate AI diary for university submission (tracking week)
+// @route   POST /api/interns/:id/generate-diary
+// @access  Private (Intern or Manager)
+export const generateAIDiary = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const tracking = await InternTimeTracking.findById(req.params.id)
+      .populate('internId', 'name email department');
+
+    if (!tracking) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Tracking record not found',
+      });
+    }
+
+    // Check authorization
+    if (
+      req.user.role === 'intern' &&
+      tracking.internId._id.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Not authorized',
+      });
+    }
+
+    if (tracking.tasks.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'No tasks logged for this week',
+      });
+    }
+
+    const internName = (tracking.internId as any).name;
+    const weekNumber = getWeek(tracking.weekStartDate);
+    const year = getYear(tracking.weekStartDate);
+
+    const tasks = tracking.tasks.map(task => ({
+      date: task.date.toISOString().split('T')[0],
+      description: task.description,
+      hours: task.hours,
+    }));
+
+    // Generate academic diary using Gemini AI for university submission
+    const aiDiary = await generateWeeklyDiary(
+      internName,
+      weekNumber,
+      year,
+      tasks,
+      tracking.totalHours
+    );
+
+    tracking.aiGeneratedDiary = aiDiary;
+    tracking.diaryGenerated = true;
+    await tracking.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        trackingId: tracking._id,
+        diary: aiDiary,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Generate supervisor feedback for university evaluation
+// @route   POST /api/interns/:id/generate-feedback
+// @access  Private (Supervisor/Manager)
+export const generateAIFeedback = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const tracking = await InternTimeTracking.findById(req.params.id)
+      .populate('internId', 'name email department');
+
+    if (!tracking) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Tracking record not found',
+      });
+    }
+
+    if (!tracking.aiGeneratedDiary) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please generate diary first',
+      });
+    }
+
+    const internName = (tracking.internId as any).name;
+    const weekNumber = getWeek(tracking.weekStartDate);
+    const year = getYear(tracking.weekStartDate);
+
+    const tasks = tracking.tasks.map(task => ({
+      date: task.date.toISOString().split('T')[0],
+      description: task.description,
+      hours: task.hours,
+    }));
+
+    // Generate supervisor feedback using Gemini AI for university assessment
+    const aiFeedback = await generateSupervisorFeedback(
+      internName,
+      weekNumber,
+      year,
+      tasks,
+      tracking.totalHours,
+      tracking.aiGeneratedDiary
+    );
+
+    tracking.aiGeneratedFeedback = aiFeedback;
+    await tracking.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        trackingId: tracking._id,
+        feedback: aiFeedback,
       },
     });
   } catch (error) {
