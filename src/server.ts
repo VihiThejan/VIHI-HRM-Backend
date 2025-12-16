@@ -18,6 +18,7 @@ import attendanceRoutes from './routes/attendance.routes';
 import payrollRoutes from './routes/payroll.routes';
 import performanceRoutes from './routes/performance.routes';
 import internRoutes from './routes/intern.routes';
+import diaryRoutes from './routes/diary.routes';
 import permissionRoutes from './routes/permission.routes';
 import roleRoutes from './routes/role.routes';
 import userRoutes from './routes/user.routes';
@@ -99,6 +100,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/interns', internRoutes);
+app.use('/api/diary', diaryRoutes);
 
 // Admin routes
 app.use('/api/admin/permissions', permissionRoutes);
