@@ -160,8 +160,8 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
       ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
       manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
-      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
-      intern: ['view_dashboard', 'track_own_time', 'request_leave'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
+      intern: ['view_dashboard', 'track_own_time', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
     };
 
     const token = generateToken(employee._id.toString());
@@ -319,8 +319,8 @@ export const resetPassword = async (req: AuthRequest, res: Response, next: NextF
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
       ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
       manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
-      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
-      intern: ['view_dashboard', 'track_own_time', 'request_leave'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
+      intern: ['view_dashboard', 'track_own_time', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
     };
 
     res.status(200).json({
