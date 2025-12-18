@@ -145,8 +145,15 @@ export const createEmployee = async (req: AuthRequest, res: Response, next: Next
     // Use staff ID as the temporary password
     const tempPassword = staffId;
     
+    // Automatically set role to 'intern' if position is 'Intern'
+    let role = req.body.role || 'employee';
+    if (req.body.position === 'Intern') {
+      role = 'intern';
+    }
+    
     const employeeData = {
       ...req.body,
+      role: role, // Ensure role is set correctly
       staffId: staffId, // Always use generated staffId
       password: tempPassword,
       passwordResetRequired: true, // Force password change on first login
@@ -180,6 +187,11 @@ export const createEmployee = async (req: AuthRequest, res: Response, next: Next
 // @access  Private (Admin/CEO)
 export const updateEmployee = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    // Automatically set role to 'intern' if position is changed to 'Intern'
+    if (req.body.position === 'Intern' && !req.body.role) {
+      req.body.role = 'intern';
+    }
+    
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
       req.body,

@@ -123,6 +123,67 @@ export const updateDailyTasks = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+// Update generated diary entry
+export const updateGeneratedEntry = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const internId = req.user?.id;
+    const { date, generatedEntry } = req.body;
+
+    if (!date || !generatedEntry) {
+      return res.status(400).json({ message: 'Date and generated entry are required' });
+    }
+
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+
+    // Get the Monday of the week for this date
+    const dayOfWeek = targetDate.getDay();
+    const diff = targetDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const monday = new Date(targetDate);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+
+    const diary = await DiaryEntry.findOne({
+      internId,
+      weekStartDate: monday
+    });
+
+    if (!diary) {
+      return res.status(404).json({ message: 'Diary entry not found for this week' });
+    }
+
+    // Find the specific day entry
+    const dayEntry = diary.entries.find(entry => {
+      const entryDate = new Date(entry.date);
+      entryDate.setHours(0, 0, 0, 0);
+      return entryDate.getTime() === targetDate.getTime();
+    });
+
+    if (!dayEntry) {
+      return res.status(404).json({ message: 'Day entry not found' });
+    }
+
+    // Don't allow editing after submission
+    if (dayEntry.status === 'submitted') {
+      return res.status(400).json({ message: 'Cannot edit submitted entries' });
+    }
+
+    // Update generated entry
+    dayEntry.generatedEntry = generatedEntry;
+
+    await diary.save();
+
+    res.json({ message: 'Diary entry updated successfully', diary });
+  } catch (error) {
+    logger.error('Error updating generated entry:', error);
+    next(error);
+  }
+};
+
 // Generate AI diary entry for a specific day
 export const generateDailyEntry = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -232,8 +293,9 @@ export const submitDailyEntry = async (req: AuthRequest, res: Response, next: Ne
       return res.status(404).json({ message: 'Day entry not found' });
     }
 
-    if (!dayEntry.generatedEntry || dayEntry.generatedEntry.trim() === '') {
-      return res.status(400).json({ message: 'Please generate diary entry before submitting' });
+    // Check if tasks exist
+    if (!dayEntry.tasks || dayEntry.tasks.length === 0) {
+      return res.status(400).json({ message: 'Please add tasks before submitting' });
     }
 
     dayEntry.status = 'submitted';

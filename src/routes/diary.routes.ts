@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getCurrentWeekDiary,
   updateDailyTasks,
+  updateGeneratedEntry,
   generateDailyEntry,
   submitDailyEntry,
   submitWeekForFeedback,
@@ -19,6 +20,7 @@ const router = Router();
 router.get('/current-week', protect, getCurrentWeekDiary);
 router.get('/my-diaries', protect, getInternDiaries);
 router.post('/update-tasks', protect, updateDailyTasks);
+router.post('/update-generated-entry', protect, updateGeneratedEntry);
 router.post('/generate-entry', protect, generateDailyEntry);
 router.post('/submit-entry', protect, submitDailyEntry);
 router.post('/submit-week', protect, submitWeekForFeedback);

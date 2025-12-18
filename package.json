@@ -12,7 +12,8 @@
     "seed:admin": "ts-node src/scripts/createAdmin.ts",
     "seed:rbac": "ts-node src/scripts/seedRBAC.ts",
     "migrate:admin": "ts-node src/scripts/migrateAdmin.ts",
-    "create:rbac-admin": "ts-node src/scripts/createRBACAdmin.ts"
+    "create:rbac-admin": "ts-node src/scripts/createRBACAdmin.ts",
+    "fix:intern-roles": "ts-node src/scripts/fixInternRoles.ts"
   },
   "keywords": [
     "hrm",
