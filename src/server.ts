@@ -78,9 +78,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
-// Handle preflight requests
-app.options('*', cors());
-
 // Security headers (after CORS)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -92,8 +89,11 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Rate limiting
+// Rate limiting (after CORS)
 app.use('/api', rateLimiter);
+
+// Handle preflight requests AFTER rate limiting
+app.options('*', cors());
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {

@@ -9,6 +9,7 @@ export const rateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS', // Skip rate limiting for CORS preflight
 });
 
 export const authLimiter = rateLimit({
