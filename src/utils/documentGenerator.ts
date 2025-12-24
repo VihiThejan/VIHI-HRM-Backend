@@ -5,10 +5,12 @@ import path from 'path';
 import { IDiaryEntry } from '../models/DiaryEntry.model';
 import { logger } from '../config/logger';
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists (only in non-serverless environments)
 const uploadsDir = path.join(__dirname, '../../uploads/diaries');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
 }
 
 // Generate DOCX document for supervisor
