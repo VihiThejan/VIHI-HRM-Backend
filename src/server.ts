@@ -56,13 +56,12 @@ seedPermissionsAndRoles().catch(err => {
 });
 
 // Middleware
-app.use(helmet()); // Security headers
-
 // CORS configuration - support multiple origins
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : ['http://localhost:3000', 'https://vihi-hrm-core.pages.dev'];
 
+// Apply CORS before other middleware
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -74,7 +73,14 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
+
+// Security headers (after CORS)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -83,8 +89,11 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Rate limiting
+// Rate limiting (after CORS)
 app.use('/api', rateLimiter);
+
+// Handle preflight requests AFTER rate limiting
+app.options('*', cors());
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
