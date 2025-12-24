@@ -107,7 +107,7 @@ const InternSchema = new Schema(
 );
 
 // Pre-save hook to ensure role is set to 'intern'
-InternSchema.pre('save', function (next) {
+InternSchema.pre('save', function (this: IIntern, next) {
   if (this.isNew) {
     this.role = 'intern';
     this.position = 'Intern';
