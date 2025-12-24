@@ -34,7 +34,7 @@ export const getCurrentWeekDiary = async (req: AuthRequest, res: Response, next:
     // Create new diary if doesn't exist
     if (!diary) {
       const weekNumber = await (DiaryEntry as any).calculateWeekNumber(internId, monday);
-      
+
       // Initialize all weekday entries
       const entries = [];
       for (let i = 0; i < 5; i++) {
@@ -333,7 +333,7 @@ export const submitWeekForFeedback = async (req: AuthRequest, res: Response, nex
 
     // Check if all entries are submitted
     if (!(diary as any).areAllEntriesSubmitted()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'All weekday entries must be submitted before requesting feedback',
         completionPercentage: (diary as any).getWeekCompletionPercentage()
       });
@@ -360,10 +360,10 @@ export const submitWeekForFeedback = async (req: AuthRequest, res: Response, nex
 
     await diary.save();
 
-    res.json({ 
-      message: 'Week submitted for feedback successfully', 
+    res.json({
+      message: 'Week submitted for feedback successfully',
       generatedFeedback,
-      diary 
+      diary
     });
   } catch (error) {
     logger.error('Error submitting week for feedback:', error);
@@ -405,20 +405,77 @@ export const getPendingDiariesForSupervisor = async (req: AuthRequest, res: Resp
     const supervisedInterns = await Employee.find({
       position: 'Intern',
       supervisor: supervisorId
-    }).select('_id');
+    }).select('_id name staffId');
+
+    logger.info(`Supervisor ${supervisorId} has ${supervisedInterns.length} interns`);
 
     const internIds = supervisedInterns.map(intern => intern._id);
 
     const diaries = await DiaryEntry.find({
       internId: { $in: internIds },
-      weeklyStatus: { $in: ['feedback-generated', 'signed'] }
+      weeklyStatus: { $in: ['submitted-for-feedback', 'feedback-generated', 'signed'] }
     })
       .sort({ submittedForFeedbackAt: -1 })
       .populate('internId', 'name universityId university course staffId');
 
+    logger.info(`Found ${diaries.length} diaries for supervisor ${supervisorId}`);
+
     res.json(diaries);
   } catch (error) {
     logger.error('Error getting pending diaries:', error);
+    next(error);
+  }
+};
+
+// Regenerate supervisor feedback (for supervisors)
+export const regenerateSupervisorFeedback = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { diaryId } = req.params;
+    const supervisorId = req.user?.id;
+
+    if (!supervisorId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const diary = await DiaryEntry.findById(diaryId)
+      .populate('internId', 'name universityId university course staffId');
+
+    if (!diary) {
+      return res.status(404).json({ message: 'Diary not found' });
+    }
+
+    // Verify supervisor has access
+    const intern = await Employee.findById(diary.internId);
+    if (!intern || intern.supervisor?.toString() !== supervisorId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Regenerate AI supervisor feedback
+    const internData = diary.internId as any;
+    const generatedFeedback = await generateWeeklySupervisorFeedback(
+      diary.entries.map(entry => ({
+        day: entry.dayOfWeek,
+        tasks: entry.tasks,
+        entry: entry.generatedEntry
+      })),
+      internData.name,
+      internData.university,
+      internData.course,
+      diary.weekNumber
+    );
+
+    diary.generatedFeedback = generatedFeedback;
+    diary.feedbackGeneratedAt = new Date();
+
+    await diary.save();
+
+    res.json({
+      message: 'Feedback regenerated successfully',
+      generatedFeedback,
+      diary
+    });
+  } catch (error) {
+    logger.error('Error regenerating feedback:', error);
     next(error);
   }
 };
@@ -501,9 +558,9 @@ export const submitSignedDiary = async (req: AuthRequest, res: Response, next: N
 
     await diary.save();
 
-    res.json({ 
-      message: 'Diary signed and submitted successfully', 
-      diary 
+    res.json({
+      message: 'Diary signed and submitted successfully',
+      diary
     });
   } catch (error) {
     logger.error('Error submitting signed diary:', error);
@@ -543,12 +600,63 @@ export const downloadSignedPDF = async (req: AuthRequest, res: Response, next: N
     }
 
     // Return the document URL
-    res.json({ 
+    res.json({
       documentUrl: diary.supervisorSignature.documentUrl,
       message: 'Document ready for download'
     });
   } catch (error) {
     logger.error('Error downloading signed PDF:', error);
+    next(error);
+  }
+};
+
+// Upload signed diary (for supervisor)
+export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { diaryId } = req.params;
+    const supervisorId = req.user?.id;
+    const file = req.file;
+
+    if (!supervisorId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const diary = await DiaryEntry.findById(diaryId)
+      .populate('internId', 'name universityId university course staffId');
+
+    if (!diary) {
+      return res.status(404).json({ message: 'Diary not found' });
+    }
+
+    // Verify supervisor has access
+    const intern = await Employee.findById(diary.internId);
+    if (!intern || intern.supervisor?.toString() !== supervisorId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Update diary
+    diary.supervisorSignature = {
+      signedBy: supervisorId as any,
+      signedAt: new Date(),
+      signatureUrl: '', // No signature image in this flow
+      documentUrl: `/uploads/${file.filename}`
+    };
+    diary.supervisorComments = req.body.comments || '';
+    diary.weeklyStatus = 'completed';
+
+    await diary.save();
+
+    res.json({
+      message: 'Signed diary uploaded successfully',
+      diary,
+      documentUrl: diary.supervisorSignature.documentUrl
+    });
+  } catch (error) {
+    logger.error('Error uploading signed diary:', error);
     next(error);
   }
 };

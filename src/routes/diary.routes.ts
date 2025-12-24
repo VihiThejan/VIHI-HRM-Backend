@@ -8,11 +8,14 @@ import {
   submitWeekForFeedback,
   getInternDiaries,
   getPendingDiariesForSupervisor,
+  regenerateSupervisorFeedback,
   downloadDiaryAsDoc,
   submitSignedDiary,
-  downloadSignedPDF
+  downloadSignedPDF,
+  uploadSignedDiary
 } from '../controllers/diary.controller';
 import { protect } from '../middleware/auth.middleware';
+import { upload } from '../utils/fileUpload';
 
 const router = Router();
 
@@ -28,7 +31,9 @@ router.get('/:diaryId/download-signed', protect, downloadSignedPDF);
 
 // Supervisor routes
 router.get('/pending-review', protect, getPendingDiariesForSupervisor);
+router.post('/:diaryId/regenerate-feedback', protect, regenerateSupervisorFeedback);
 router.get('/:diaryId/download-doc', protect, downloadDiaryAsDoc);
 router.post('/:diaryId/submit-signed', protect, submitSignedDiary);
+router.post('/:diaryId/upload-signed', protect, upload.single('file'), uploadSignedDiary);
 
 export default router;

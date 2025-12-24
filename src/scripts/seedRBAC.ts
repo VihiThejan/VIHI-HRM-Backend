@@ -6,21 +6,21 @@ import { logger } from '../config/logger';
 const permissions = [
   // Dashboard
   { key: 'view_dashboard', module: 'dashboard', action: 'view', description: 'View dashboard' },
-  
+
   // Employees
   { key: 'view_employees', module: 'employees', action: 'view', description: 'View employees list' },
   { key: 'create_employees', module: 'employees', action: 'create', description: 'Create new employee' },
   { key: 'update_employees', module: 'employees', action: 'update', description: 'Update employee information' },
   { key: 'delete_employees', module: 'employees', action: 'delete', description: 'Delete employee' },
   { key: 'manage_employees', module: 'employees', action: 'manage', description: 'Full employee management' },
-  
+
   // Recruitment
   { key: 'view_recruitment', module: 'recruitment', action: 'view', description: 'View job postings and applicants' },
   { key: 'create_recruitment', module: 'recruitment', action: 'create', description: 'Create job postings' },
   { key: 'update_recruitment', module: 'recruitment', action: 'update', description: 'Update job postings and applicant status' },
   { key: 'delete_recruitment', module: 'recruitment', action: 'delete', description: 'Delete job postings' },
   { key: 'manage_recruitment', module: 'recruitment', action: 'manage', description: 'Full recruitment management' },
-  
+
   // Leaves
   { key: 'request_leave', module: 'leaves', action: 'create', description: 'Request leave' },
   { key: 'view_leaves', module: 'leaves', action: 'view', description: 'View leave requests' },
@@ -28,13 +28,13 @@ const permissions = [
   { key: 'approve_leaves', module: 'leaves', action: 'approve', description: 'Approve leave requests' },
   { key: 'reject_leaves', module: 'leaves', action: 'reject', description: 'Reject leave requests' },
   { key: 'delete_leaves', module: 'leaves', action: 'delete', description: 'Delete leave requests' },
-  
+
   // Attendance
   { key: 'view_attendance', module: 'attendance', action: 'view', description: 'View attendance records' },
   { key: 'create_attendance', module: 'attendance', action: 'create', description: 'Record attendance' },
   { key: 'update_attendance', module: 'attendance', action: 'update', description: 'Update attendance records' },
   { key: 'manage_attendance', module: 'attendance', action: 'manage', description: 'Full attendance management' },
-  
+
   // Payroll
   { key: 'view_payroll', module: 'payroll', action: 'view', description: 'View payroll information' },
   { key: 'create_payroll', module: 'payroll', action: 'create', description: 'Generate payroll' },
@@ -42,20 +42,20 @@ const permissions = [
   { key: 'approve_payroll', module: 'payroll', action: 'approve', description: 'Approve payroll' },
   { key: 'run_payroll', module: 'payroll', action: 'run', description: 'Process payroll payments' },
   { key: 'manage_payroll', module: 'payroll', action: 'manage', description: 'Full payroll management' },
-  
+
   // Performance
   { key: 'view_performance', module: 'performance', action: 'view', description: 'View performance reviews' },
   { key: 'create_performance', module: 'performance', action: 'create', description: 'Create performance reviews' },
   { key: 'update_performance', module: 'performance', action: 'update', description: 'Update performance reviews' },
   { key: 'delete_performance', module: 'performance', action: 'delete', description: 'Delete performance reviews' },
   { key: 'manage_performance', module: 'performance', action: 'manage', description: 'Full performance management' },
-  
+
   // Interns
   { key: 'track_own_time', module: 'interns', action: 'create', description: 'Track own time entries' },
   { key: 'view_interns', module: 'interns', action: 'view', description: 'View intern time tracking' },
   { key: 'comment_intern_diary', module: 'interns', action: 'comment', description: 'Comment on intern diaries' },
   { key: 'manage_interns', module: 'interns', action: 'manage', description: 'Full intern management' },
-  
+
   // Admin
   { key: 'manage_roles', module: 'admin', action: 'manage', description: 'Manage roles and permissions' },
   { key: 'manage_users', module: 'admin', action: 'manage', description: 'Manage user accounts' },
@@ -128,6 +128,7 @@ const defaultRoles = [
       'create_performance',
       'update_performance',
       'view_interns',
+      'comment_intern_diary',
     ],
   },
   {
