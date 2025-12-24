@@ -92,7 +92,14 @@ export const getWeeklySummary = async (req: AuthRequest, res: Response, next: Ne
     }
 
     const summaries = await InternTimeTracking.find(query)
-      .populate('internId', 'name email department')
+      .populate({
+        path: 'internId',
+        select: 'name email department supervisor universityId',
+        populate: {
+          path: 'supervisor',
+          select: 'name staffId designation position'
+        }
+      })
       .sort({ weekStartDate: -1 })
       .limit(10);
 
@@ -111,7 +118,14 @@ export const getWeeklySummary = async (req: AuthRequest, res: Response, next: Ne
 export const getTracking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const tracking = await InternTimeTracking.findById(req.params.id)
-      .populate('internId', 'name email department');
+      .populate({
+        path: 'internId',
+        select: 'name email department supervisor universityId',
+        populate: {
+          path: 'supervisor',
+          select: 'name staffId designation position'
+        }
+      });
 
     if (!tracking) {
       return res.status(404).json({
@@ -355,7 +369,14 @@ export const getAllTracking = async (req: AuthRequest, res: Response, next: Next
 
     const total = await InternTimeTracking.countDocuments(query);
     const trackings = await InternTimeTracking.find(query)
-      .populate('internId', 'name email department')
+      .populate({
+        path: 'internId',
+        select: 'name email department supervisor universityId',
+        populate: {
+          path: 'supervisor',
+          select: 'name staffId designation position'
+        }
+      })
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ weekStartDate: -1 });

@@ -1,0 +1,16 @@
+🔍 Debugging Document Download...
+Querying DiaryEntry...
+❌ DB Query Failed: Schema hasn't been registered for model "Employee".
+Use mongoose.model(name, schema)
+MissingSchemaError: Schema hasn't been registered for model "Employee".
+Use mongoose.model(name, schema)
+    at NativeConnection.model (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\connection.js:1497:13)
+    at _getModelFromConn (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\helpers\populate\getModelsMapForPopulate.js:579:15)
+    at addModelNamesToMap (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\helpers\populate\getModelsMapForPopulate.js:507:17)
+    at getModelsMapForPopulate (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\helpers\populate\getModelsMapForPopulate.js:208:7)
+    at _populatePath (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\model.js:4487:21)
+    at model.populate (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\model.js:4454:21)
+    at model.Query.Query._completeOne (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\query.js:2640:18)
+    at D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\query.js:2712:10
+    at new Promise (<anonymous>)
+    at model.Query._findOne (D:\Projects\HRM\VIHI-HRM-Backend\node_modules\mongoose\lib\query.js:2711:10)

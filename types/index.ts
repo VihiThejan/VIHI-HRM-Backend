@@ -33,6 +33,27 @@ export interface Employee {
   supervisor?: string | Employee;
 }
 
+// Intern Types (extends Employee)
+export interface Intern extends Employee {
+  universityId: string;
+  supervisor: string | Employee;
+  internshipStartDate: Date;
+  internshipEndDate?: Date;
+  weeklyHoursLimit: number;
+  university: string;
+  course?: string;
+  academicYear?: string;
+  internshipType: 'academic' | 'industrial' | 'summer';
+  stipend?: number;
+  evaluationCriteria?: {
+    technicalSkills?: number;
+    communication?: number;
+    teamwork?: number;
+    punctuality?: number;
+    overallRating?: number;
+  };
+}
+
 // Leave Types
 export type LeaveType = 'sick' | 'casual' | 'annual' | 'unpaid';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';

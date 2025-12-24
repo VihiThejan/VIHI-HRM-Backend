@@ -1,4 +1,5 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
+import path from 'path';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -18,6 +19,7 @@ import attendanceRoutes from './routes/attendance.routes';
 import payrollRoutes from './routes/payroll.routes';
 import performanceRoutes from './routes/performance.routes';
 import internRoutes from './routes/intern.routes';
+import diaryRoutes from './routes/diary.routes';
 import permissionRoutes from './routes/permission.routes';
 import roleRoutes from './routes/role.routes';
 import userRoutes from './routes/user.routes';
@@ -57,7 +59,7 @@ seedPermissionsAndRoles().catch(err => {
 app.use(helmet()); // Security headers
 
 // CORS configuration - support multiple origins
-const allowedOrigins = process.env.CORS_ORIGIN 
+const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : ['http://localhost:3000', 'https://vihi-hrm-core.pages.dev'];
 
@@ -65,7 +67,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -77,6 +79,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rate limiting
 app.use('/api', rateLimiter);
@@ -99,6 +104,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/interns', internRoutes);
+app.use('/api/diary', diaryRoutes);
 
 // Admin routes
 app.use('/api/admin/permissions', permissionRoutes);
