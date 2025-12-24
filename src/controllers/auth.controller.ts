@@ -86,7 +86,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Check if password matches
     const isMatch = await employee.comparePassword(password);
-    
+
     if (!isMatch) {
       return res.status(401).json({
         status: 'error',
@@ -114,7 +114,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Try to find associated User for RBAC
     let user = await User.findOne({ employeeId: employee._id }).select('+password');
-    
+
     if (user) {
       // User has RBAC roles, use those
       // Check if user is active
@@ -159,9 +159,9 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     const rolePermissionMap: { [key: string]: string[] } = {
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
       ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
-      manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
-      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
-      intern: ['view_dashboard', 'track_own_time', 'request_leave'],
+      manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'manage_interns', 'comment_intern_diary'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
+      intern: ['view_dashboard', 'track_own_time', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
     };
 
     const token = generateToken(employee._id.toString());
@@ -240,7 +240,7 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
       const rolePermissionMap: { [key: string]: string[] } = {
         admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
         ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
-        manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
+        manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'comment_intern_diary'],
         employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
         intern: ['view_dashboard', 'track_own_time', 'request_leave'],
       };
@@ -318,9 +318,9 @@ export const resetPassword = async (req: AuthRequest, res: Response, next: NextF
     const rolePermissionMap: { [key: string]: string[] } = {
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
       ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
-      manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
-      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
-      intern: ['view_dashboard', 'track_own_time', 'request_leave'],
+      manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'manage_interns', 'comment_intern_diary'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
+      intern: ['view_dashboard', 'track_own_time', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
     };
 
     res.status(200).json({

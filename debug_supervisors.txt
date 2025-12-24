@@ -1,0 +1,57 @@
+🔍 Checking Intern-Supervisor Relationships...
+
+--- POSSIBLE SUPERVISORS ---
+Name: System Admin, ID: 692ea40ceb094950c07b4ea2, Role: admin
+Name: John Smith, ID: 69441a061e53bf9c005da533, Role: ceo
+
+--- INTERNS ---
+Name: Emily, ID: 69319e55cee83900e9b2ae1a
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Tharu Thathsarani, ID: 69348020afe61e8c060c41c0
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: shiran silva, ID: 6937c9946f2aaaac265d5c77
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Nadee Hewapathirana, ID: 6937cb59f3669db2bb907db5
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Hansi Sandushma, ID: 6937cdc1f3669db2bb907dca
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Tiran, ID: 6937cfeff3669db2bb907de7
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Teena Ameliya, ID: 6937d229f3669db2bb907e06
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: K.M.V. Thejan Bandara, ID: 69386f611c45b215d66c7fc6
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Gayan Tharuka De Silva, ID: 693cf19308aa48352e611f5c
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Sashi Gamage, ID: 693cf3c3dabcf48f0eda452e
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Shehan Dulmin, ID: 693d0c99acedb18539e208f7
+   Supervisor Field: undefined
+   Valid Supervisor Link: ❌ (Field missing or null)
+Name: Ashani Perera, ID: 693d2759a4015ab3d1b3dbf9
+   Supervisor Field: 693d257fa4015ab3d1b3dbf0
+   Valid Supervisor Link: ❌ (ID not found in list above)
+Name: Yasas, ID: 693da8e78fd47ea8af9b4c55
+   Supervisor Field: 693d257fa4015ab3d1b3dbf0
+   Valid Supervisor Link: ❌ (ID not found in list above)
+Name: Tishi, ID: 693daba275fa6c81c8c68cb6
+   Supervisor Field: 693d257fa4015ab3d1b3dbf0
+   Valid Supervisor Link: ❌ (ID not found in list above)
+Name: Prabhani Lakshika, ID: 6943c240313dba267bee7091
+   Supervisor Field: 693d257fa4015ab3d1b3dbf0
+   Valid Supervisor Link: ❌ (ID not found in list above)
+Name: Nadee Hewapathirana, ID: 694bbc51a59a0cc050a3b1ea
+   Supervisor Field: 694bbbb3a59a0cc050a3b1d6
+   Valid Supervisor Link: ❌ (ID not found in list above)
+
+--- END OF REPORT ---
