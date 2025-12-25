@@ -499,8 +499,34 @@ export const downloadDiaryAsDoc = async (req: AuthRequest, res: Response, next: 
 
     // Verify supervisor has access
     const intern = await Employee.findById(diary.internId);
-    if (!intern || intern.supervisor?.toString() !== supervisorId) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (!intern) {
+      return res.status(404).json({ message: 'Intern not found for this diary' });
+    }
+
+    // Check permissions
+    const permissions = req.user?.permissions || [];
+    const isAdminOrManager = permissions.includes('manage_interns') || permissions.includes('manage_employees');
+
+    if (isAdminOrManager) {
+      // Allow access for admins/managers
+      logger.info(`Access granted to ${req.user.name} (Admin/Manager)`);
+    } else {
+      // Strict check for direct supervisors
+      const internSupervisor = intern?.supervisor;
+      const internSupervisorStr = internSupervisor?.toString();
+      const supervisorIdStr = req.user?.id?.toString();
+      const employeeIdStr = req.user?.employeeId?.toString();
+
+      const isSupervisor = internSupervisorStr === supervisorIdStr;
+      const isSupervisorByEmployeeId = employeeIdStr && internSupervisorStr === employeeIdStr;
+
+      if (!isSupervisor && !isSupervisorByEmployeeId) {
+        logger.warn(`Access denied. Supervisor expected: ${internSupervisorStr}, User has: ${supervisorIdStr} or ${employeeIdStr}`);
+        return res.status(403).json({
+          message: 'Access denied. You are not the assigned supervisor.',
+          debug: `Expected: ${internSupervisorStr}, Got: ${supervisorIdStr}/${employeeIdStr}`
+        });
+      }
     }
 
     // Generate document
