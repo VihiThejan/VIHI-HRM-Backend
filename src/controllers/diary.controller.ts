@@ -396,29 +396,51 @@ export const getInternDiaries = async (req: AuthRequest, res: Response, next: Ne
 export const getPendingDiariesForSupervisor = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const supervisorId = req.user?.id;
+    const employeeId = req.user?.employeeId;
 
     if (!supervisorId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // Find all interns supervised by this supervisor
-    const supervisedInterns = await Employee.find({
-      position: 'Intern',
-      supervisor: supervisorId
-    }).select('_id name staffId');
+    // Check permissions
+    const permissions = req.user?.permissions || [];
+    const isAdminOrManager = permissions.includes('manage_interns') || permissions.includes('manage_employees');
 
-    logger.info(`Supervisor ${supervisorId} has ${supervisedInterns.length} interns`);
+    let diaries;
 
-    const internIds = supervisedInterns.map(intern => intern._id);
+    if (isAdminOrManager) {
+      // Admin/Manager can see ALL pending diaries
+      diaries = await DiaryEntry.find({
+        weeklyStatus: { $in: ['submitted-for-feedback', 'feedback-generated', 'signed'] }
+      })
+        .sort({ submittedForFeedbackAt: -1 })
+        .populate('internId', 'name universityId university course staffId supervisor');
 
-    const diaries = await DiaryEntry.find({
-      internId: { $in: internIds },
-      weeklyStatus: { $in: ['submitted-for-feedback', 'feedback-generated', 'signed'] }
-    })
-      .sort({ submittedForFeedbackAt: -1 })
-      .populate('internId', 'name universityId university course staffId');
+      logger.info(`Admin/Manager ${req.user.name} viewing all ${diaries.length} pending diaries`);
+    } else {
+      // Regular supervisors only see their own interns
+      // Use employeeId if available (RBAC), otherwise fallback to supervisorId (Legacy)
+      const effectiveSupervisorId = employeeId || supervisorId;
 
-    logger.info(`Found ${diaries.length} diaries for supervisor ${supervisorId}`);
+      // Find all interns supervised by this supervisor
+      const supervisedInterns = await Employee.find({
+        position: 'Intern',
+        supervisor: effectiveSupervisorId
+      }).select('_id name staffId');
+
+      logger.info(`Supervisor ${effectiveSupervisorId} has ${supervisedInterns.length} interns`);
+
+      const internIds = supervisedInterns.map(intern => intern._id);
+
+      diaries = await DiaryEntry.find({
+        internId: { $in: internIds },
+        weeklyStatus: { $in: ['submitted-for-feedback', 'feedback-generated', 'signed'] }
+      })
+        .sort({ submittedForFeedbackAt: -1 })
+        .populate('internId', 'name universityId university course staffId');
+
+      logger.info(`Found ${diaries.length} diaries for supervisor ${effectiveSupervisorId}`);
+    }
 
     res.json(diaries);
   } catch (error) {

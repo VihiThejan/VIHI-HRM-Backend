@@ -29,15 +29,15 @@ export const protect = async (
 
     try {
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-      
+
       // Try to find user in new User model first (RBAC users)
       let user = await User.findById(decoded.id).select('-password');
-      
+
       if (user) {
         // Fetch roles and permissions for RBAC user
         const roles = await Role.find({ _id: { $in: user.roleIds } });
         const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
-        
+
         req.user = {
           id: user._id,
           name: user.name,
@@ -50,23 +50,23 @@ export const protect = async (
       } else {
         // Fallback to Employee model for backward compatibility
         const employee = await Employee.findById(decoded.id).select('-password');
-        
+
         if (!employee) {
           return res.status(401).json({
             status: 'error',
             message: 'User not found',
           });
         }
-        
+
         // Map old role system to permissions for backward compatibility
         const rolePermissionMap: { [key: string]: string[] } = {
           admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users'],
           ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
-          manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance'],
-          employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
+          manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'comment_intern_diary'],
+          employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'comment_intern_diary'],
           intern: ['view_dashboard', 'track_own_time', 'request_leave'],
         };
-        
+
         req.user = {
           id: employee._id,
           name: employee.name,

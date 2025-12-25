@@ -160,7 +160,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
       ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
       manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'manage_interns', 'comment_intern_diary'],
-      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance', 'comment_intern_diary'],
       intern: ['view_dashboard', 'track_own_time', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
     };
 
@@ -241,7 +241,7 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
         admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
         ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
         manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'comment_intern_diary'],
-        employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance'],
+        employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'comment_intern_diary'],
         intern: ['view_dashboard', 'track_own_time', 'request_leave'],
       };
 
@@ -319,7 +319,7 @@ export const resetPassword = async (req: AuthRequest, res: Response, next: NextF
       admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
       ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
       manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'manage_interns', 'comment_intern_diary'],
-      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
+      employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance', 'comment_intern_diary'],
       intern: ['view_dashboard', 'track_own_time', 'request_leave', 'view_leaves', 'create_attendance', 'view_attendance'],
     };
 
