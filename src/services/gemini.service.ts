@@ -116,10 +116,10 @@ export const generateDiaryEntry = async (
     // Check if API key is available
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === '') {
       // Generate a basic diary entry without AI
-      const taskList = tasks.map((task, index) => 
+      const taskList = tasks.map((task, index) =>
         `${index + 1}. ${task.description} (${task.completionStatus}, ${task.timeSpent || 0} hours)`
       ).join('\n');
-      
+
       return `Internship Diary Entry - ${dayOfWeek}
 
 Today, I completed several important tasks as part of my internship at the organization. The activities undertaken have contributed to my professional development and practical learning experience.
@@ -166,12 +166,12 @@ Format it as a cohesive paragraph or two, written in first person, appropriate f
     return response.text();
   } catch (error) {
     console.error('Error generating diary entry with Gemini AI:', error);
-    
+
     // Return fallback content if Gemini AI fails
-    const taskList = tasks.map((task, index) => 
+    const taskList = tasks.map((task, index) =>
       `${index + 1}. ${task.description} (${task.completionStatus}, ${task.timeSpent || 0} hours)`
     ).join('\n');
-    
+
     return `Internship Diary Entry - ${dayOfWeek}
 
 Today, I completed several important tasks as part of my internship at the organization. The activities undertaken have contributed to my professional development and practical learning experience.
@@ -201,79 +201,51 @@ export const generateWeeklySupervisorFeedback = async (
 ): Promise<string> => {
   // Calculate totals outside try block so they're accessible in catch block
   const totalTasks = weekEntries.reduce((sum, day) => sum + day.tasks.length, 0);
-  const totalHours = weekEntries.reduce((sum, day) => 
+  const totalHours = weekEntries.reduce((sum, day) =>
     sum + day.tasks.reduce((daySum, task) => daySum + (task.timeSpent || 0), 0), 0
   );
 
   try {
     // Check if API key is available
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === '') {
-      // Generate basic supervisor feedback without AI
-      return `SUPERVISOR WEEKLY ASSESSMENT - Week ${weekNumber}
+      // Generate basic supervisor feedback without AI (Professional Fallback)
+      return `SUPERVISOR EVALUATION - Week ${weekNumber}
 
+Date: ${new Date().toLocaleDateString()}
 Intern: ${internName}
-Institution: ${university}
-Program: ${course}
-Period: Week ${weekNumber}
-Total Tasks Completed: ${totalTasks}
-Total Hours: ${totalHours} hours
 
-PERFORMANCE OVERVIEW:
-${internName} has demonstrated satisfactory performance during Week ${weekNumber} of the internship program. The intern completed ${totalTasks} tasks with a total of ${totalHours} working hours, showing consistent engagement with assigned responsibilities.
+${internName} has demonstrated a professional approach to their assigned responsibilities this week. The quality of work produced meets the expected standards for this stage of the internship. The intern has shown an ability to apply theoretical concepts to practical tasks and has engaged well with the team.
 
-SKILLS & COMPETENCIES:
-The intern has shown adequate technical skills and a willingness to learn. Tasks were completed with reasonable quality, and the intern demonstrated the ability to apply academic knowledge from the ${course} program to practical workplace situations. Problem-solving skills are developing progressively.
-
-PROFESSIONAL CONDUCT:
-${internName} has maintained professional behavior throughout the week, including punctuality, effective communication with team members, and adherence to workplace policies. The intern shows respect for organizational procedures and demonstrates good work ethics.
-
-AREAS OF STRENGTH:
-- Consistent task completion
-- Professional attitude and conduct  
-- Willingness to learn and accept feedback
-- Application of academic knowledge
-
-RECOMMENDATIONS FOR DEVELOPMENT:
-Continue building on current skills while seeking opportunities to take on more challenging assignments. Focus on enhancing technical competencies and developing greater independence in task execution. Overall performance is satisfactory for this stage of the internship.
-
-Supervisor Assessment - Week ${weekNumber}`;
+Throughout the week, the intern displayed good problem-solving skills and a willingness to learn new processes. Professional conduct, including punctuality and communication, has been satisfactory. To further their development, I recommend focusing on taking more initiative in identifying solutions effectively and deepening their understanding of the core project workflows. Overall, a solid performance for the week.`;
     }
-    
+
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     const prompt = `
-You are a workplace supervisor providing formal weekly feedback for an intern's university evaluation.
+You are a workplace supervisor writing a professional weekly performance evaluation for an intern.
 
 Intern: ${internName}
 University: ${university}
-Course/Program: ${course}
-Week Number: ${weekNumber}
-Total Tasks Completed: ${totalTasks}
-Total Hours: ${totalHours} hours
+Course: ${course}
+Week: ${weekNumber}
 
-Daily Diary Entries:
-
+Tasks & Activities for Context (Do NOT mention specific counts or hours in the final output):
 ${weekEntries.map(day => `
-${day.day}:
-Tasks: ${day.tasks.map(t => `- ${t.description} (${t.completionStatus}, ${t.timeSpent || 0}h)`).join('\n')}
+${day.day}: ${day.tasks.map(t => t.description).join(', ')}
+Diary: ${day.entry}
+`).join('\n')}
 
-Diary Entry:
-${day.entry}
-`).join('\n---\n')}
+**Instructions:**
+Write a **professional, narrative performance feedback paragraph** (approx. 150 words).
+- **DO NOT** mention the specific number of tasks completed or total hours worked.
+- **DO NOT** use bullet points or headers. Write it as standard prose.
+- Focus on:
+  1. The quality and reliability of their work.
+  2. Their professional conduct and attitude.
+  3. How effective they were in applying their knowledge.
+  4. A constructive suggestion for growth.
 
-Please generate comprehensive supervisor feedback (300-400 words) suitable for university internship assessment that:
-
-1. **Performance Overview**: Assess overall performance, work quality, and productivity for the week
-2. **Skills & Competencies**: Evaluate technical skills, problem-solving abilities, and application of academic knowledge
-3. **Professional Conduct**: Comment on work ethic, punctuality, teamwork, communication, and professionalism
-4. **Strengths**: Highlight specific accomplishments, positive attributes, and areas where the intern excelled
-5. **Areas for Development**: Provide constructive feedback on skills to improve and learning opportunities
-6. **Learning Outcomes**: Acknowledge connection between academic preparation and practical work
-7. **Overall Assessment**: Provide a summary rating of performance and recommendation
-
-Format the feedback as an official supervisor assessment with clear sections. Use a professional, objective tone suitable for academic evaluation. Be specific with examples from the week's work.
-
-Sign off as: "Supervisor Assessment - Week ${weekNumber}"
+Tone: Formal, encouraging, and suitable for a university record.
 `;
 
     const result = await model.generateContent(prompt);
@@ -281,35 +253,15 @@ Sign off as: "Supervisor Assessment - Week ${weekNumber}"
     return response.text();
   } catch (error) {
     console.error('Error generating weekly supervisor feedback with Gemini AI:', error);
-    
-    // Return fallback content if Gemini AI fails
-    return `SUPERVISOR WEEKLY ASSESSMENT - Week ${weekNumber}
 
+    // Return fallback content if Gemini AI fails (Professional Fallback)
+    return `SUPERVISOR EVALUATION - Week ${weekNumber}
+
+Date: ${new Date().toLocaleDateString()}
 Intern: ${internName}
-Institution: ${university}
-Program: ${course}
-Period: Week ${weekNumber}
-Total Tasks Completed: ${totalTasks}
-Total Hours: ${totalHours} hours
 
-PERFORMANCE OVERVIEW:
-${internName} has demonstrated satisfactory performance during Week ${weekNumber} of the internship program. The intern completed ${totalTasks} tasks with a total of ${totalHours} working hours, showing consistent engagement with assigned responsibilities.
+${internName} has performed the assigned duties with due diligence this week. The work submitted demonstrates a good understanding of the requirements and a commitment to professional standards. The intern's interaction with the subject matter shows promising development in practical skills.
 
-SKILLS & COMPETENCIES:
-The intern has shown adequate technical skills and a willingness to learn. Tasks were completed with reasonable quality, and the intern demonstrated the ability to apply academic knowledge from the ${course} program to practical workplace situations. Problem-solving skills are developing progressively.
-
-PROFESSIONAL CONDUCT:
-${internName} has maintained professional behavior throughout the week, including punctuality, effective communication with team members, and adherence to workplace policies. The intern shows respect for organizational procedures and demonstrates good work ethics.
-
-AREAS OF STRENGTH:
-- Consistent task completion
-- Professional attitude and conduct  
-- Willingness to learn and accept feedback
-- Application of academic knowledge
-
-RECOMMENDATIONS FOR DEVELOPMENT:
-Continue building on current skills while seeking opportunities to take on more challenging assignments. Focus on enhancing technical competencies and developing greater independence in task execution. Overall performance is satisfactory for this stage of the internship.
-
-Supervisor Assessment - Week ${weekNumber}`;
+The intern has maintained a professional attitude and adhered to workplace protocols. Communication with colleagues has been effective. Going forward, I encourage ${internName} to seek out more complex challenges to broaden their experience and to continue refining their attention to detail. This week represents a satisfactory step in their professional development.`;
   }
 };
