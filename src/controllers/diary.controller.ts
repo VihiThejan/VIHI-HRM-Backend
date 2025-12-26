@@ -708,3 +708,52 @@ export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: N
     next(error);
   }
 };
+
+// Upload intern's weekly submission document
+export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { diaryId } = req.params;
+    const internId = req.user?.id;
+    const file = req.file;
+
+    if (!internId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const diary = await DiaryEntry.findById(diaryId);
+
+    if (!diary) {
+      return res.status(404).json({ message: 'Diary not found' });
+    }
+
+    // specific check: ensure the logged-in intern owns this diary
+    if (diary.internId.toString() !== internId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Update with submission details
+    diary.internSubmissionUrl = `/uploads/${file.filename}`;
+    diary.internSubmissionDate = new Date();
+
+    // Optionally: could also update 'weeklyStatus' if that's part of the flow, 
+    // but the request was "after week completion... submit template".
+    // I'll assume this doesn't strictly change the 'status' enum unless 
+    // we want a new status like 'intern-submitted-doc'. 
+    // Keeping existing status logic for now to avoid breaking other flows.
+
+    await diary.save();
+
+    res.json({
+      message: 'Weekly diary document uploaded successfully',
+      diary,
+      documentUrl: diary.internSubmissionUrl
+    });
+  } catch (error) {
+    logger.error('Error uploading intern submission:', error);
+    next(error);
+  }
+};
