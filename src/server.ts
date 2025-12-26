@@ -88,6 +88,7 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/templates', express.static(path.join(__dirname, '../Template')));
 
 // Rate limiting (after CORS)
 app.use('/api', rateLimiter);
