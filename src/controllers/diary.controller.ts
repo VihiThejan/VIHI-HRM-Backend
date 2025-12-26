@@ -713,10 +713,14 @@ export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: N
 export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { diaryId } = req.params;
-    const internId = req.user?.id;
+
+    // Use employeeId if available (RBAC), otherwise fall back to user id (Legacy)
+    let internId = req.user?.employeeId ? req.user.employeeId.toString() : req.user?.id;
     const file = req.file;
 
-    if (!internId) {
+    logger.info(`Upload Request - UserID: ${req.user?.id}, EmployeeID: ${req.user?.employeeId}, InternID Resolved: ${internId}`);
+
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -730,14 +734,33 @@ export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response
       return res.status(404).json({ message: 'Diary not found' });
     }
 
+    logger.info(`Diary Found - ID: ${diary._id}, Owner InternID: ${diary.internId}`);
+
     // specific check: ensure the logged-in intern owns this diary
     if (diary.internId.toString() !== internId) {
-      return res.status(403).json({ message: 'Access denied' });
+      logger.warn(`ID Mismatch. Trying lookup by email for user: ${req.user.email}`);
+      // Fallback: Try to find employee by email
+      const employee = await Employee.findOne({ email: req.user.email });
+
+      if (employee && diary.internId.toString() === employee._id.toString()) {
+        logger.info(`Access Granted via Email Match. EmployeeID: ${employee._id}`);
+        internId = employee._id.toString();
+      } else {
+        logger.error(`Access Denied - Diary Owner: ${diary.internId}, Request User: ${internId}`);
+        return res.status(403).json({
+          message: 'Access denied',
+          debug: `Diary Owner: ${diary.internId}, Your Resolved ID: ${internId}`
+        });
+      }
     }
 
     // Update with submission details
     diary.internSubmissionUrl = `/uploads/${file.filename}`;
     diary.internSubmissionDate = new Date();
+
+    // Crucial: Update status so it appears in supervisor's pending list
+    diary.weeklyStatus = 'submitted-for-feedback';
+    diary.submittedForFeedbackAt = new Date();
 
     // Optionally: could also update 'weeklyStatus' if that's part of the flow, 
     // but the request was "after week completion... submit template".
