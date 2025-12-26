@@ -33,6 +33,8 @@ export interface IDiaryEntry extends Document {
   };
   downloadedByIntern: boolean;
   downloadedAt?: Date;
+  internSubmissionUrl?: string; // Uploaded by intern
+  internSubmissionDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,7 +126,9 @@ const DiaryEntrySchema = new Schema<IDiaryEntry>({
     type: Boolean,
     default: false
   },
-  downloadedAt: Date
+  downloadedAt: Date,
+  internSubmissionUrl: String,
+  internSubmissionDate: Date
 }, {
   timestamps: true
 });
@@ -134,19 +138,19 @@ DiaryEntrySchema.index({ internId: 1, weekStartDate: 1 }, { unique: true });
 DiaryEntrySchema.index({ weeklyStatus: 1 });
 
 // Method to check if all weekday entries are submitted
-DiaryEntrySchema.methods.areAllEntriesSubmitted = function(): boolean {
+DiaryEntrySchema.methods.areAllEntriesSubmitted = function (): boolean {
   return this.entries.length === 5 && this.entries.every(entry => entry.status === 'submitted');
 };
 
 // Method to get completion percentage for the week
-DiaryEntrySchema.methods.getWeekCompletionPercentage = function(): number {
+DiaryEntrySchema.methods.getWeekCompletionPercentage = function (): number {
   const totalDays = 5; // Monday to Friday
   const submittedDays = this.entries.filter(entry => entry.status === 'submitted').length;
   return Math.round((submittedDays / totalDays) * 100);
 };
 
 // Static method to get current week's Monday
-DiaryEntrySchema.statics.getCurrentWeekMonday = function(): Date {
+DiaryEntrySchema.statics.getCurrentWeekMonday = function (): Date {
   const today = new Date();
   const day = today.getDay();
   const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
@@ -156,7 +160,7 @@ DiaryEntrySchema.statics.getCurrentWeekMonday = function(): Date {
 };
 
 // Static method to get week number in internship
-DiaryEntrySchema.statics.calculateWeekNumber = async function(internId: mongoose.Types.ObjectId, weekStartDate: Date): Promise<number> {
+DiaryEntrySchema.statics.calculateWeekNumber = async function (internId: mongoose.Types.ObjectId, weekStartDate: Date): Promise<number> {
   const count = await this.countDocuments({
     internId,
     weekStartDate: { $lt: weekStartDate }

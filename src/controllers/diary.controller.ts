@@ -396,29 +396,51 @@ export const getInternDiaries = async (req: AuthRequest, res: Response, next: Ne
 export const getPendingDiariesForSupervisor = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const supervisorId = req.user?.id;
+    const employeeId = req.user?.employeeId;
 
     if (!supervisorId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // Find all interns supervised by this supervisor
-    const supervisedInterns = await Employee.find({
-      position: 'Intern',
-      supervisor: supervisorId
-    }).select('_id name staffId');
+    // Check permissions
+    const permissions = req.user?.permissions || [];
+    const isAdminOrManager = permissions.includes('manage_interns') || permissions.includes('manage_employees');
 
-    logger.info(`Supervisor ${supervisorId} has ${supervisedInterns.length} interns`);
+    let diaries;
 
-    const internIds = supervisedInterns.map(intern => intern._id);
+    if (isAdminOrManager) {
+      // Admin/Manager can see ALL pending/completed diaries
+      diaries = await DiaryEntry.find({
+        weeklyStatus: { $in: ['submitted-for-feedback', 'feedback-generated', 'signed', 'completed'] }
+      })
+        .sort({ submittedForFeedbackAt: -1 })
+        .populate('internId', 'name universityId university course staffId supervisor');
 
-    const diaries = await DiaryEntry.find({
-      internId: { $in: internIds },
-      weeklyStatus: { $in: ['submitted-for-feedback', 'feedback-generated', 'signed'] }
-    })
-      .sort({ submittedForFeedbackAt: -1 })
-      .populate('internId', 'name universityId university course staffId');
+      logger.info(`Admin/Manager ${req.user.name} viewing all ${diaries.length} diaries`);
+    } else {
+      // Regular supervisors only see their own interns
+      // Use employeeId if available (RBAC), otherwise fallback to supervisorId (Legacy)
+      const effectiveSupervisorId = employeeId || supervisorId;
 
-    logger.info(`Found ${diaries.length} diaries for supervisor ${supervisorId}`);
+      // Find all interns supervised by this supervisor
+      const supervisedInterns = await Employee.find({
+        position: 'Intern',
+        supervisor: effectiveSupervisorId
+      }).select('_id name staffId');
+
+      logger.info(`Supervisor ${effectiveSupervisorId} has ${supervisedInterns.length} interns`);
+
+      const internIds = supervisedInterns.map(intern => intern._id);
+
+      diaries = await DiaryEntry.find({
+        internId: { $in: internIds },
+        weeklyStatus: { $in: ['submitted-for-feedback', 'feedback-generated', 'signed'] }
+      })
+        .sort({ submittedForFeedbackAt: -1 })
+        .populate('internId', 'name universityId university course staffId');
+
+      logger.info(`Found ${diaries.length} diaries for supervisor ${effectiveSupervisorId}`);
+    }
 
     res.json(diaries);
   } catch (error) {
@@ -431,9 +453,11 @@ export const getPendingDiariesForSupervisor = async (req: AuthRequest, res: Resp
 export const regenerateSupervisorFeedback = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { diaryId } = req.params;
-    const supervisorId = req.user?.id;
 
-    if (!supervisorId) {
+    // Use employeeId if available (RBAC), otherwise fall back to user id (Legacy)
+    let supervisorId = req.user?.employeeId ? req.user.employeeId.toString() : req.user?.id;
+
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -446,8 +470,26 @@ export const regenerateSupervisorFeedback = async (req: AuthRequest, res: Respon
 
     // Verify supervisor has access
     const intern = await Employee.findById(diary.internId);
-    if (!intern || intern.supervisor?.toString() !== supervisorId) {
-      return res.status(403).json({ message: 'Access denied' });
+
+    if (!intern) {
+      return res.status(404).json({ message: 'Intern not found' });
+    }
+
+    // Check if the current user is the supervisor
+    if (intern.supervisor?.toString() !== supervisorId) {
+      logger.warn(`Feedback Gen: ID Mismatch. UserID: ${req.user.id}, EmpID: ${req.user.employeeId}, InternSupervisor: ${intern.supervisor}`);
+
+      // Fallback: Try to find employee by email if ID mismatch (robustness)
+      const employee = await Employee.findOne({ email: req.user.email });
+      if (employee && intern.supervisor?.toString() === employee._id.toString()) {
+        logger.info(`Feedback Gen: Access Granted via Email Match.`);
+        supervisorId = employee._id.toString();
+      } else {
+        return res.status(403).json({
+          message: 'Access denied. You are not the supervisor of this intern.',
+          debug: `Supervisor: ${intern.supervisor}, Your ID: ${supervisorId}`
+        });
+      }
     }
 
     // Regenerate AI supervisor feedback
@@ -499,8 +541,34 @@ export const downloadDiaryAsDoc = async (req: AuthRequest, res: Response, next: 
 
     // Verify supervisor has access
     const intern = await Employee.findById(diary.internId);
-    if (!intern || intern.supervisor?.toString() !== supervisorId) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (!intern) {
+      return res.status(404).json({ message: 'Intern not found for this diary' });
+    }
+
+    // Check permissions
+    const permissions = req.user?.permissions || [];
+    const isAdminOrManager = permissions.includes('manage_interns') || permissions.includes('manage_employees');
+
+    if (isAdminOrManager) {
+      // Allow access for admins/managers
+      logger.info(`Access granted to ${req.user.name} (Admin/Manager)`);
+    } else {
+      // Strict check for direct supervisors
+      const internSupervisor = intern?.supervisor;
+      const internSupervisorStr = internSupervisor?.toString();
+      const supervisorIdStr = req.user?.id?.toString();
+      const employeeIdStr = req.user?.employeeId?.toString();
+
+      const isSupervisor = internSupervisorStr === supervisorIdStr;
+      const isSupervisorByEmployeeId = employeeIdStr && internSupervisorStr === employeeIdStr;
+
+      if (!isSupervisor && !isSupervisorByEmployeeId) {
+        logger.warn(`Access denied. Supervisor expected: ${internSupervisorStr}, User has: ${supervisorIdStr} or ${employeeIdStr}`);
+        return res.status(403).json({
+          message: 'Access denied. You are not the assigned supervisor.',
+          debug: `Expected: ${internSupervisorStr}, Got: ${supervisorIdStr}/${employeeIdStr}`
+        });
+      }
     }
 
     // Generate document
@@ -614,10 +682,11 @@ export const downloadSignedPDF = async (req: AuthRequest, res: Response, next: N
 export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { diaryId } = req.params;
-    const supervisorId = req.user?.id;
+    // Use employeeId if available (RBAC), otherwise fall back to user id (Legacy)
+    let supervisorId = req.user?.employeeId ? req.user.employeeId.toString() : req.user?.id;
     const file = req.file;
 
-    if (!supervisorId) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -634,8 +703,26 @@ export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: N
 
     // Verify supervisor has access
     const intern = await Employee.findById(diary.internId);
-    if (!intern || intern.supervisor?.toString() !== supervisorId) {
-      return res.status(403).json({ message: 'Access denied' });
+
+    if (!intern) {
+      return res.status(404).json({ message: 'Intern not found' });
+    }
+
+    // Check if the current user is the supervisor
+    if (intern.supervisor?.toString() !== supervisorId) {
+      logger.warn(`Upload Signed: ID Mismatch. UserID: ${req.user.id}, EmpID: ${req.user.employeeId}, InternSupervisor: ${intern.supervisor}`);
+
+      // Fallback
+      const employee = await Employee.findOne({ email: req.user.email });
+      if (employee && intern.supervisor?.toString() === employee._id.toString()) {
+        logger.info(`Upload Signed: Access Granted via Email Match.`);
+        supervisorId = employee._id.toString();
+      } else {
+        return res.status(403).json({
+          message: 'Access denied. You are not the supervisor of this intern.',
+          debug: `Supervisor: ${intern.supervisor}, Your ID: ${supervisorId}`
+        });
+      }
     }
 
     // Update diary
@@ -657,6 +744,78 @@ export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: N
     });
   } catch (error) {
     logger.error('Error uploading signed diary:', error);
+    next(error);
+  }
+};
+
+// Upload intern's weekly submission document
+export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { diaryId } = req.params;
+
+    // Use employeeId if available (RBAC), otherwise fall back to user id (Legacy)
+    let internId = req.user?.employeeId ? req.user.employeeId.toString() : req.user?.id;
+    const file = req.file;
+
+    logger.info(`Upload Request - UserID: ${req.user?.id}, EmployeeID: ${req.user?.employeeId}, InternID Resolved: ${internId}`);
+
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const diary = await DiaryEntry.findById(diaryId);
+
+    if (!diary) {
+      return res.status(404).json({ message: 'Diary not found' });
+    }
+
+    logger.info(`Diary Found - ID: ${diary._id}, Owner InternID: ${diary.internId}`);
+
+    // specific check: ensure the logged-in intern owns this diary
+    if (diary.internId.toString() !== internId) {
+      logger.warn(`ID Mismatch. Trying lookup by email for user: ${req.user.email}`);
+      // Fallback: Try to find employee by email
+      const employee = await Employee.findOne({ email: req.user.email });
+
+      if (employee && diary.internId.toString() === employee._id.toString()) {
+        logger.info(`Access Granted via Email Match. EmployeeID: ${employee._id}`);
+        internId = employee._id.toString();
+      } else {
+        logger.error(`Access Denied - Diary Owner: ${diary.internId}, Request User: ${internId}`);
+        return res.status(403).json({
+          message: 'Access denied',
+          debug: `Diary Owner: ${diary.internId}, Your Resolved ID: ${internId}`
+        });
+      }
+    }
+
+    // Update with submission details
+    diary.internSubmissionUrl = `/uploads/${file.filename}`;
+    diary.internSubmissionDate = new Date();
+
+    // Crucial: Update status so it appears in supervisor's pending list
+    diary.weeklyStatus = 'submitted-for-feedback';
+    diary.submittedForFeedbackAt = new Date();
+
+    // Optionally: could also update 'weeklyStatus' if that's part of the flow, 
+    // but the request was "after week completion... submit template".
+    // I'll assume this doesn't strictly change the 'status' enum unless 
+    // we want a new status like 'intern-submitted-doc'. 
+    // Keeping existing status logic for now to avoid breaking other flows.
+
+    await diary.save();
+
+    res.json({
+      message: 'Weekly diary document uploaded successfully',
+      diary,
+      documentUrl: diary.internSubmissionUrl
+    });
+  } catch (error) {
+    logger.error('Error uploading intern submission:', error);
     next(error);
   }
 };

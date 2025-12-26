@@ -12,7 +12,8 @@ import {
   downloadDiaryAsDoc,
   submitSignedDiary,
   downloadSignedPDF,
-  uploadSignedDiary
+  uploadSignedDiary,
+  uploadInternWeekSubmission
 } from '../controllers/diary.controller';
 import { protect } from '../middleware/auth.middleware';
 import { upload } from '../utils/fileUpload';
@@ -27,6 +28,7 @@ router.post('/update-generated-entry', protect, updateGeneratedEntry);
 router.post('/generate-entry', protect, generateDailyEntry);
 router.post('/submit-entry', protect, submitDailyEntry);
 router.post('/submit-week', protect, submitWeekForFeedback);
+router.post('/:diaryId/submit-document', protect, upload.single('file'), uploadInternWeekSubmission);
 router.get('/:diaryId/download-signed', protect, downloadSignedPDF);
 
 // Supervisor routes
