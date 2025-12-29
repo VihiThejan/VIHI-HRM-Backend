@@ -1,0 +1,22 @@
+Connected to database...
+Total Users: 16
+Total Employees: 25
+
+--- Analysis ---
+Users without 'employeeId' field: 1
+ - System Admin (admin@vihi.com)
+
+Users NOT linked to Employee, but Email matches an existing Employee: 1
+ - User: System Admin <-> Employee: System Admin (admin@vihi.com)
+
+Employees who do not have a linked User account: 10
+ - System Admin (admin@vihi.com)
+ - Vihinsa Thejan Bandara (theju@gmail.com)
+ - John Steffs (jo@gmail.com)
+ - adse thsf (adr@gmail.com)
+ - Prashan Rathnayake (prashan@gmail.com)
+ - Prabhani Lakshika (prabha@gmail.com)
+ - John Smith (ceo@vihi.com)
+ - Supun Jayasinghe (supun@gmail.com)
+ - Nadee Hewapathirana (nadee12@gmail.com)
+ - Nithya Dissanayake (nithi@gmail.com)

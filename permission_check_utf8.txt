@@ -1,0 +1,9 @@
+Connected to database...
+User: System Admin (admin@vihi.com)
+Roles: Super Admin
+
+Role: Super Admin
+Permission Keys: 40
+Has 'manage_permissions': YES
+
+Final Result: System Admin has 'manage_permissions'? YES
