@@ -28,6 +28,7 @@ const permissions = [
   { key: 'approve_leaves', module: 'leaves', action: 'approve', description: 'Approve leave requests' },
   { key: 'reject_leaves', module: 'leaves', action: 'reject', description: 'Reject leave requests' },
   { key: 'delete_leaves', module: 'leaves', action: 'delete', description: 'Delete leave requests' },
+  { key: 'manage_leaves', module: 'leaves', action: 'manage', description: 'Full leaves management' },
 
   // Attendance
   { key: 'view_attendance', module: 'attendance', action: 'view', description: 'View attendance records' },
@@ -88,6 +89,7 @@ const defaultRoles = [
       'update_recruitment',
       'delete_recruitment',
       'view_leaves',
+      'manage_leaves',
       'approve_leaves',
       'reject_leaves',
       'manage_attendance',
