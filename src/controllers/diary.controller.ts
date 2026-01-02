@@ -768,7 +768,7 @@ export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: N
       signatureUrl: '', // No signature image in this flow
       documentUrl: driveFile.webViewLink // Use Drive Link
     };
-    diary.signedDocumentDriveId = driveFile.id;
+    diary.signedDocumentDriveId = driveFile.fileId;
     diary.signedDocumentDriveLink = driveFile.webViewLink;
     diary.supervisorComments = req.body.comments || '';
     diary.weeklyStatus = 'completed';
@@ -902,25 +902,4 @@ export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response
     logger.error('Error uploading intern submission:', error);
     next(error);
   }
-};
-diary.weeklyStatus = 'submitted-for-feedback';
-diary.submittedForFeedbackAt = new Date();
-
-// Optionally: could also update 'weeklyStatus' if that's part of the flow, 
-// but the request was "after week completion... submit template".
-// I'll assume this doesn't strictly change the 'status' enum unless 
-// we want a new status like 'intern-submitted-doc'. 
-// Keeping existing status logic for now to avoid breaking other flows.
-
-await diary.save();
-
-res.json({
-  message: 'Weekly diary document uploaded successfully',
-  diary,
-  documentUrl: diary.internSubmissionUrl
-});
-  } catch (error) {
-  logger.error('Error uploading intern submission:', error);
-  next(error);
-}
 };
