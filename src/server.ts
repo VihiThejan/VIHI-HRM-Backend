@@ -59,7 +59,7 @@ seedPermissionsAndRoles().catch(err => {
 // CORS configuration - support multiple origins
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000', 'https://vihi-hrm-core.pages.dev'];
+  : ['http://localhost:3000', 'http://localhost:3001', 'https://vihi-hrm-core.pages.dev'];
 
 // Apply CORS before other middleware
 app.use(cors({
