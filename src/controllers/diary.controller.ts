@@ -5,6 +5,7 @@ import { generateDiaryEntry, generateWeeklySupervisorFeedback } from '../service
 import { generateDiaryDocument, generateSignedDiaryPDF } from '../utils/documentGenerator';
 import { logger } from '../config/logger';
 import { AuthRequest } from '../middleware/auth.middleware';
+import * as googleDriveService from '../services/googleDrive.service';
 
 // Get or create current week's diary
 export const getCurrentWeekDiary = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -695,7 +696,7 @@ export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: N
     }
 
     const diary = await DiaryEntry.findById(diaryId)
-      .populate('internId', 'name universityId university course staffId');
+      .populate('internId', 'name universityId university course staffId googleDriveFolderId mobile');
 
     if (!diary) {
       return res.status(404).json({ message: 'Diary not found' });
@@ -725,13 +726,50 @@ export const uploadSignedDiary = async (req: AuthRequest, res: Response, next: N
       }
     }
 
+    // Ensure Week Folder exists
+    let weekFolderId = diary.googleDriveFolderId;
+
+    if (!weekFolderId) {
+      // Find or create intern root folder
+      const staffId = intern.staffId || intern.universityId || intern._id.toString();
+      const internFolderId = await googleDriveService.getOrCreateEmployeeFolder(
+        intern._id.toString(),
+        intern.name,
+        staffId,
+        true // isIntern
+      );
+
+      if (!intern.googleDriveFolderId) {
+        intern.googleDriveFolderId = internFolderId;
+        await intern.save();
+      }
+
+      // Create week folder
+      weekFolderId = await googleDriveService.getOrCreateWeekFolder(
+        internFolderId,
+        diary.weekNumber,
+        diary.weekStartDate
+      );
+      diary.googleDriveFolderId = weekFolderId;
+    }
+
+    // Upload file to Drive
+    const driveFile = await googleDriveService.uploadFile(
+      `Signed_Diary_Week_${diary.weekNumber}_${intern.name}.pdf`,
+      file.mimetype,
+      file.buffer,
+      weekFolderId
+    );
+
     // Update diary
     diary.supervisorSignature = {
       signedBy: supervisorId as any,
       signedAt: new Date(),
       signatureUrl: '', // No signature image in this flow
-      documentUrl: `/uploads/${file.filename}`
+      documentUrl: driveFile.webViewLink // Use Drive Link
     };
+    diary.signedDocumentDriveId = driveFile.id;
+    diary.signedDocumentDriveLink = driveFile.webViewLink;
     diary.supervisorComments = req.body.comments || '';
     diary.weeklyStatus = 'completed';
 
@@ -793,24 +831,70 @@ export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response
       }
     }
 
+    // Ensure Week Folder exists
+    let weekFolderId = diary.googleDriveFolderId;
+
+    // Fetch intern details if not already available
+    const intern = await Employee.findById(internId);
+    if (!intern) {
+      return res.status(404).json({ message: 'Intern not found' });
+    }
+
+    if (!weekFolderId) {
+      // Find or create intern root folder
+      const staffId = intern.staffId || intern.universityId || intern._id.toString();
+      const internFolderId = await googleDriveService.getOrCreateEmployeeFolder(
+        intern._id.toString(),
+        intern.name,
+        staffId,
+        true // isIntern
+      );
+
+      if (!intern.googleDriveFolderId) {
+        intern.googleDriveFolderId = internFolderId;
+        await intern.save();
+      }
+
+      // Create week folder
+      weekFolderId = await googleDriveService.getOrCreateWeekFolder(
+        internFolderId,
+        diary.weekNumber,
+        diary.weekStartDate
+      );
+      diary.googleDriveFolderId = weekFolderId;
+    }
+
+    // Upload file to Drive
+    const driveFile = await googleDriveService.uploadFile(
+      file.originalname,
+      file.mimetype,
+      file.buffer,
+      weekFolderId
+    );
+
     // Update with submission details
-    diary.internSubmissionUrl = `/uploads/${file.filename}`;
+    diary.internSubmissionUrl = driveFile.webViewLink; // Use Drive Link
     diary.internSubmissionDate = new Date();
 
     // Crucial: Update status so it appears in supervisor's pending list
-    diary.weeklyStatus = 'submitted-for-feedback';
-    diary.submittedForFeedbackAt = new Date();
+    // Only update status if it's currently in progress
+    if (diary.weeklyStatus === 'in-progress') {
+      diary.weeklyStatus = 'submitted-for-feedback';
+      diary.submittedForFeedbackAt = new Date();
+    }
 
-    // Optionally: could also update 'weeklyStatus' if that's part of the flow, 
-    // but the request was "after week completion... submit template".
-    // I'll assume this doesn't strictly change the 'status' enum unless 
-    // we want a new status like 'intern-submitted-doc'. 
-    // Keeping existing status logic for now to avoid breaking other flows.
+    // Mark all daily entries as submitted if they aren't already
+    diary.entries.forEach(entry => {
+      if (entry.status !== 'submitted') {
+        entry.status = 'submitted';
+        entry.submittedAt = new Date();
+      }
+    });
 
     await diary.save();
 
     res.json({
-      message: 'Weekly diary document uploaded successfully',
+      message: 'Document uploaded successfully',
       diary,
       documentUrl: diary.internSubmissionUrl
     });
@@ -818,4 +902,25 @@ export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response
     logger.error('Error uploading intern submission:', error);
     next(error);
   }
+};
+diary.weeklyStatus = 'submitted-for-feedback';
+diary.submittedForFeedbackAt = new Date();
+
+// Optionally: could also update 'weeklyStatus' if that's part of the flow, 
+// but the request was "after week completion... submit template".
+// I'll assume this doesn't strictly change the 'status' enum unless 
+// we want a new status like 'intern-submitted-doc'. 
+// Keeping existing status logic for now to avoid breaking other flows.
+
+await diary.save();
+
+res.json({
+  message: 'Weekly diary document uploaded successfully',
+  diary,
+  documentUrl: diary.internSubmissionUrl
+});
+  } catch (error) {
+  logger.error('Error uploading intern submission:', error);
+  next(error);
+}
 };

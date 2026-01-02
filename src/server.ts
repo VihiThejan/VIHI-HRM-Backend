@@ -6,6 +6,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 
+// Load environment variables
+dotenv.config();
+
 // Import configurations
 import { connectDB } from './config/database';
 import { logger } from './config/logger';
@@ -23,6 +26,7 @@ import diaryRoutes from './routes/diary.routes';
 import permissionRoutes from './routes/permission.routes';
 import roleRoutes from './routes/role.routes';
 import userRoutes from './routes/user.routes';
+import googleDriveRoutes from './routes/googleDrive.routes';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
@@ -33,9 +37,6 @@ import './jobs/diaryGeneration.job';
 
 // Import seeding
 import { seedPermissionsAndRoles } from './scripts/seedRBAC';
-
-// Load environment variables
-dotenv.config();
 
 // Validate required environment variables
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-super-secret-jwt-key-change-this-in-production') {
@@ -120,6 +121,9 @@ app.use('/api/diary', diaryRoutes);
 app.use('/api/admin/permissions', permissionRoutes);
 app.use('/api/admin/roles', roleRoutes);
 app.use('/api/admin/users', userRoutes);
+
+// Google Drive routes
+app.use('/api/drive', googleDriveRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
