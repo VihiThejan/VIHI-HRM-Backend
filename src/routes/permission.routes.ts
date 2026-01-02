@@ -5,6 +5,7 @@ import {
   createPermission,
   updatePermission,
   deletePermission,
+  getPermissionUsers,
 } from '../controllers/permission.controller';
 import { protect } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/permission.middleware';
@@ -21,8 +22,12 @@ router.route('/')
 
 router.get('/grouped', getPermissionsGrouped);
 
+// Get users who have a specific permission
+router.get('/:key/users', getPermissionUsers);
+
 router.route('/:id')
   .put(updatePermission)
   .delete(deletePermission);
 
 export default router;
+

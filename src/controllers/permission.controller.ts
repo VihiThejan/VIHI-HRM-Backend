@@ -1,5 +1,7 @@
 import { Response, NextFunction } from 'express';
 import Permission from '../models/Permission.model';
+import Role from '../models/Role.model';
+import User from '../models/User.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 // @desc    Get all permissions
@@ -8,7 +10,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 export const getPermissions = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { module, action } = req.query;
-    
+
     let query: any = {};
     if (module) query.module = module;
     if (action) query.action = action;
@@ -30,7 +32,7 @@ export const getPermissions = async (req: AuthRequest, res: Response, next: Next
 export const getPermissionsGrouped = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const permissions = await Permission.find().sort({ module: 1, action: 1 });
-    
+
     // Group by module
     const grouped = permissions.reduce((acc: any, perm) => {
       if (!acc[perm.module]) {
@@ -110,12 +112,12 @@ export const updatePermission = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
-// @desc    Delete permission
+// @desc    Delete permission (with cascade removal from roles)
 // @route   DELETE /api/admin/permissions/:id
 // @access  Private (manage_permissions)
 export const deletePermission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const permission = await Permission.findByIdAndDelete(req.params.id);
+    const permission = await Permission.findById(req.params.id);
 
     if (!permission) {
       return res.status(404).json({
@@ -124,9 +126,58 @@ export const deletePermission = async (req: AuthRequest, res: Response, next: Ne
       });
     }
 
+    // Cascade: Remove this permission key from all roles that have it
+    const updateResult = await Role.updateMany(
+      { permissionKeys: permission.key },
+      { $pull: { permissionKeys: permission.key } }
+    );
+
+    // Delete the permission
+    await permission.deleteOne();
+
     res.status(200).json({
       status: 'success',
       message: 'Permission deleted successfully',
+      rolesUpdated: updateResult.modifiedCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get users who have a specific permission
+// @route   GET /api/admin/permissions/:key/users
+// @access  Private (manage_permissions)
+export const getPermissionUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { key } = req.params;
+
+    // Find the permission
+    const permission = await Permission.findOne({ key });
+    if (!permission) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Permission not found',
+      });
+    }
+
+    // Find all roles that have this permission
+    const roles = await Role.find({ permissionKeys: key });
+    const roleIds = roles.map(r => r._id);
+
+    // Find all users with these roles
+    const users = await User.find({ roleIds: { $in: roleIds } })
+      .populate('roleIds', 'name')
+      .select('name email status');
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        permission,
+        roles: roles.map(r => ({ _id: r._id, name: r.name })),
+        users,
+        totalUsers: users.length,
+      },
     });
   } catch (error) {
     next(error);

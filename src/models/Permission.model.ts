@@ -36,7 +36,7 @@ const permissionSchema = new Schema<IPermission>(
     action: {
       type: String,
       required: [true, 'Action is required'],
-      enum: ['view', 'create', 'update', 'delete', 'approve', 'reject', 'manage', 'run', 'comment'],
+      enum: ['view', 'create', 'update', 'delete', 'approve', 'reject', 'manage', 'run', 'comment', 'export', 'import', 'review'],
     },
     description: {
       type: String,
