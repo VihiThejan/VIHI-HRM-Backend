@@ -47,6 +47,9 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-super-secret-jwt
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy - Required for Vercel and rate limiting to work correctly
+app.set('trust proxy', 1);
+
 // Connect to MongoDB
 connectDB();
 
