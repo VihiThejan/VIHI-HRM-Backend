@@ -10,10 +10,10 @@ dotenv.config();
 const checkStaffId = async (staffId: string) => {
   try {
     // Connect to MongoDB
-    const mongoUri = process.env.MONGO_URI || '';
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || '';
     
     if (!mongoUri) {
-      console.error('❌ MONGO_URI not found in environment variables');
+      console.error('❌ MONGODB_URI or MONGO_URI not found in environment variables');
       process.exit(1);
     }
 

@@ -14,7 +14,8 @@
     "migrate:admin": "ts-node src/scripts/migrateAdmin.ts",
     "create:rbac-admin": "ts-node src/scripts/createRBACAdmin.ts",
     "fix:intern-roles": "ts-node src/scripts/fixInternRoles.ts",
-    "check:staff": "ts-node src/scripts/checkStaffId.ts"
+    "check:staff": "ts-node src/scripts/checkStaffId.ts",
+    "reset:password": "ts-node src/scripts/resetPasswordByStaffId.ts"
   },
   "keywords": [
     "hrm",
