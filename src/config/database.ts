@@ -2,10 +2,19 @@ import mongoose from 'mongoose';
 import { logger } from './logger';
 
 // Global cache for MongoDB connection (serverless optimization)
-let cached = global.mongoose;
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+declare global {
+  var mongoose: MongooseCache | undefined;
+}
+
+let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+
+if (!global.mongoose) {
+  global.mongoose = cached;
 }
 
 export const connectDB = async (): Promise<typeof mongoose> => {
@@ -25,18 +34,18 @@ export const connectDB = async (): Promise<typeof mongoose> => {
       socketTimeoutMS: 45000,
     };
 
-    cached.promise = mongoose.connect(mongoURI, opts).then((mongoose) => {
-      logger.info(`✅ MongoDB Connected: ${mongoose.connection.host}`);
+    cached.promise = mongoose.connect(mongoURI, opts).then((mongooseInstance) => {
+      logger.info(`✅ MongoDB Connected: ${mongooseInstance.connection.host}`);
       
-      mongoose.connection.on('error', (err) => {
+      mongooseInstance.connection.on('error', (err) => {
         logger.error('MongoDB connection error:', err);
       });
       
-      mongoose.connection.on('disconnected', () => {
+      mongooseInstance.connection.on('disconnected', () => {
         logger.warn('MongoDB disconnected');
       });
       
-      return mongoose;
+      return mongooseInstance;
     });
   }
 

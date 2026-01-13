@@ -49,14 +49,17 @@ const PORT = process.env.PORT || 5000;
 // Trust proxy - Required for Vercel and rate limiting to work correctly
 app.set('trust proxy', 1);
 
-// Connect to MongoDB
-connectDB();
-
-// Seed RBAC on startup
-seedPermissionsAndRoles().catch(err => {
-  logger.error('Failed to seed RBAC:', err);
-  // Don't exit, continue running the server
-});
+// Connect to MongoDB and seed RBAC after connection
+(async () => {
+  try {
+    await connectDB();
+    // Seed RBAC after DB connection is established
+    await seedPermissionsAndRoles();
+  } catch (err) {
+    logger.error('Failed to connect to DB or seed RBAC:', err);
+    // Don't exit, continue running the server
+  }
+})();
 
 // Middleware
 // CORS configuration - support multiple origins
@@ -134,8 +137,8 @@ app.use((req: Request, res: Response) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
+// Start server - bind to 0.0.0.0 to accept connections from all network interfaces
+app.listen(Number(PORT), '0.0.0.0', () => {
   logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 
