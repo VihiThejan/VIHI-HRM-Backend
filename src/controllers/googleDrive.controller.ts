@@ -31,9 +31,12 @@ export async function checkConnection(req: Request, res: Response) {
 export async function createEmployeeFolder(req: Request, res: Response) {
     try {
         const { employeeId } = req.params;
+        
+        logger.info(`Creating Google Drive folder for employee: ${employeeId}`);
 
         const employee = await Employee.findById(employeeId);
         if (!employee) {
+            logger.warn(`Employee not found: ${employeeId}`);
             return res.status(404).json({
                 status: 'error',
                 message: 'Employee not found',
@@ -42,6 +45,7 @@ export async function createEmployeeFolder(req: Request, res: Response) {
 
         // Check if folder already exists
         if (employee.googleDriveFolderId) {
+            logger.info(`Employee folder already exists: ${employee.googleDriveFolderId}`);
             return res.json({
                 status: 'success',
                 message: 'Employee folder already exists',
@@ -54,6 +58,8 @@ export async function createEmployeeFolder(req: Request, res: Response) {
         // Determine if employee is an intern
         const isIntern = employee.role === 'intern';
         const staffId = employee.staffId || employee._id.toString();
+        
+        logger.info(`Creating folder for ${isIntern ? 'intern' : 'employee'}: ${employee.name} (${staffId})`);
 
         // Create the folder
         const folderId = await googleDriveService.getOrCreateEmployeeFolder(
@@ -62,6 +68,8 @@ export async function createEmployeeFolder(req: Request, res: Response) {
             staffId,
             isIntern
         );
+        
+        logger.info(`Google Drive folder created successfully: ${folderId}`);
 
         // Update employee with folder ID
         employee.googleDriveFolderId = folderId;
@@ -71,6 +79,7 @@ export async function createEmployeeFolder(req: Request, res: Response) {
         let subfolders = null;
         if (!isIntern) {
             subfolders = await googleDriveService.createEmployeeSubfolders(folderId);
+            logger.info(`Subfolders created for employee`);
         }
 
         res.json({
@@ -81,11 +90,13 @@ export async function createEmployeeFolder(req: Request, res: Response) {
                 subfolders,
             },
         });
-    } catch (error) {
+    } catch (error: any) {
         logger.error('Error creating employee folder:', error);
+        logger.error('Error stack:', error.stack);
         res.status(500).json({
             status: 'error',
             message: 'Failed to create employee folder',
+            error: error.message,
         });
     }
 }

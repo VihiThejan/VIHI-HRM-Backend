@@ -19,10 +19,9 @@ router.use(protect);
 // Check Drive connection status (admin only)
 router.get('/status', authorize('admin', 'ceo'), googleDriveController.checkConnection);
 
-// Create/get employee folder
+// Create/get employee folder - allow any authenticated user since employee creation triggers this
 router.post(
     '/folders/employee/:employeeId',
-    authorize('admin', 'manager', 'ceo'),
     googleDriveController.createEmployeeFolder
 );
 
