@@ -30,8 +30,18 @@ export const protect = async (
     try {
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
-      // Try to find user in new User model first (RBAC users)
-      let user = await User.findById(decoded.id).select('-password');
+      // First find the employee (JWT always contains Employee ID)
+      const employee = await Employee.findById(decoded.id).select('-password');
+
+      if (!employee) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'User not found',
+        });
+      }
+
+      // Try to find associated User for RBAC (linked by employeeId)
+      let user = await User.findOne({ employeeId: employee._id }).select('-password');
 
       if (user) {
         // Fetch roles and permissions for RBAC user
@@ -39,28 +49,21 @@ export const protect = async (
         const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
 
         req.user = {
-          id: user._id,
-          name: user.name,
-          email: user.email,
+          id: employee._id,
+          name: employee.name,
+          email: employee.email,
           roleIds: user.roleIds,
           permissions: permissionKeys,
           status: user.status,
-          employeeId: user.employeeId,
+          employeeId: employee._id,
+          department: employee.department,
+          position: employee.position,
         };
       } else {
-        // Fallback to Employee model for backward compatibility
-        const employee = await Employee.findById(decoded.id).select('-password');
-
-        if (!employee) {
-          return res.status(401).json({
-            status: 'error',
-            message: 'User not found',
-          });
-        }
-
+        // Fallback: No User record, use old role-based permissions
         // Map old role system to permissions for backward compatibility
         const rolePermissionMap: { [key: string]: string[] } = {
-          admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users'],
+          admin: ['view_dashboard', 'manage_employees', 'manage_recruitment', 'approve_leaves', 'manage_attendance', 'manage_payroll', 'manage_performance', 'manage_interns', 'manage_roles', 'manage_users', 'manage_permissions'],
           ceo: ['view_dashboard', 'view_employees', 'view_payroll', 'approve_payroll', 'view_performance', 'comment_intern_diary'],
           manager: ['view_dashboard', 'view_employees', 'approve_leaves', 'view_attendance', 'view_performance', 'comment_intern_diary'],
           employee: ['view_dashboard', 'request_leave', 'view_leaves', 'create_attendance', 'comment_intern_diary'],
