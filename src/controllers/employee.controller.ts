@@ -1,6 +1,18 @@
 import { Response, NextFunction } from 'express';
 import Employee from '../models/Employee.model';
+import User from '../models/User.model';
+import Role from '../models/Role.model';
 import { AuthRequest } from '../middleware/auth.middleware';
+
+// Map old role names to new RBAC role names
+const roleToRBACMapping: { [key: string]: string } = {
+  'admin': 'Super Admin',
+  'ceo': 'CEO',
+  'manager': 'Manager',
+  'hr': 'HR Admin',
+  'employee': 'Employee',
+  'intern': 'Intern',
+};
 
 // Helper function to generate department-based staff ID
 const generateStaffId = async (department: string): Promise<string> => {
@@ -167,6 +179,25 @@ export const createEmployee = async (req: AuthRequest, res: Response, next: Next
 
     const employee = await Employee.create(employeeData);
 
+    // Auto-create User record with RBAC role
+    try {
+      const rbacRoleName = roleToRBACMapping[role] || 'Employee';
+      const rbacRole = await Role.findOne({ name: rbacRoleName });
+      
+      if (rbacRole) {
+        await User.create({
+          email: employee.email,
+          employeeId: employee._id,
+          roleIds: [rbacRole._id],
+          status: 'active',
+          password: employee.password, // Same password as employee
+        });
+        console.log(`✅ Auto-created User for ${employee.name} with role ${rbacRoleName}`);
+      }
+    } catch (userError: any) {
+      console.log(`⚠️ Could not auto-create User for ${employee.name}: ${userError.message}`);
+    }
+
     // Return employee data without password hash, but include temp password for admin
     const employeeResponse = employee.toObject();
     delete employeeResponse.password;
@@ -206,6 +237,27 @@ export const updateEmployee = async (req: AuthRequest, res: Response, next: Next
         status: 'error',
         message: 'Employee not found',
       });
+    }
+
+    // If role was updated, sync to User record
+    if (req.body.role) {
+      try {
+        const rbacRoleName = roleToRBACMapping[req.body.role] || 'Employee';
+        const rbacRole = await Role.findOne({ name: rbacRoleName });
+        
+        if (rbacRole) {
+          const updateResult = await User.updateOne(
+            { employeeId: employee._id },
+            { $set: { roleIds: [rbacRole._id], updatedAt: new Date() } }
+          );
+          
+          if (updateResult.modifiedCount > 0) {
+            console.log(`🔄 Synced User role for ${employee.name}: ${rbacRoleName}`);
+          }
+        }
+      } catch (syncError: any) {
+        console.log(`⚠️ Could not sync User role for ${employee.name}: ${syncError.message}`);
+      }
     }
 
     res.status(200).json({
