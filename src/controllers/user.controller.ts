@@ -17,13 +17,30 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 
     const users = await User.find(query)
       .populate('roleIds', 'name description')
-      .populate('employeeId', 'name department position')
+      .populate('employeeId', 'name department position designation')
       .select('-password')
       .sort({ createdAt: -1 });
 
+    // Transform to show employee designation as role
+    const transformedUsers = users.map(user => {
+      const userObj = user.toObject();
+      const employee = userObj.employeeId as any;
+      
+      // Use employee's designation or position as role display
+      const designationRole = employee?.designation || employee?.position;
+      
+      return {
+        ...userObj,
+        // Show designation/position as roles if available, otherwise show RBAC roles
+        roles: designationRole 
+          ? [{ _id: 'designation', name: designationRole, description: 'Employee Designation' }]
+          : (userObj.roleIds || []),
+      };
+    });
+
     res.status(200).json({
       status: 'success',
-      data: users,
+      data: transformedUsers,
     });
   } catch (error) {
     next(error);
@@ -47,9 +64,16 @@ export const getUser = async (req: AuthRequest, res: Response, next: NextFunctio
       });
     }
 
+    // Transform roleIds to roles for frontend compatibility
+    const userObj = user.toObject();
+    const transformedUser = {
+      ...userObj,
+      roles: userObj.roleIds || [],
+    };
+
     res.status(200).json({
       status: 'success',
-      data: user,
+      data: transformedUser,
     });
   } catch (error) {
     next(error);
