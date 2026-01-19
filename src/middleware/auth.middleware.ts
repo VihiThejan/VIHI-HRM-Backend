@@ -43,10 +43,23 @@ export const protect = async (
       // Try to find associated User for RBAC (linked by employeeId)
       let user = await User.findOne({ employeeId: employee._id }).select('-password');
 
+      console.log('DEBUG Auth:', {
+        employeeId: employee._id,
+        employeeEmail: employee.email,
+        hasUserRecord: !!user,
+        userRoleIds: user?.roleIds,
+      });
+
       if (user) {
         // Fetch roles and permissions for RBAC user
         const roles = await Role.find({ _id: { $in: user.roleIds } });
         const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
+
+        console.log('DEBUG Auth - RBAC User:', {
+          rolesFound: roles.map(r => r.name),
+          permissionCount: permissionKeys.length,
+          hasManagePermissions: permissionKeys.includes('manage_permissions'),
+        });
 
         req.user = {
           id: employee._id,

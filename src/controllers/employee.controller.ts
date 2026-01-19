@@ -163,6 +163,9 @@ export const createEmployee = async (req: AuthRequest, res: Response, next: Next
       role = 'intern';
     }
     
+    // Get the RBAC Role ID - either from form or map from old role
+    let rbacRoleId = req.body.rbacRoleId;
+    
     const employeeData = {
       ...req.body,
       role: role, // Ensure role is set correctly
@@ -170,6 +173,9 @@ export const createEmployee = async (req: AuthRequest, res: Response, next: Next
       password: tempPassword,
       passwordResetRequired: true, // Force password change on first login
     };
+    
+    // Remove rbacRoleId from employee data (it's for User, not Employee)
+    delete employeeData.rbacRoleId;
 
     // Remove staffId from req.body to prevent conflicts
     if (req.body.staffId && req.body.staffId === '') {
@@ -181,18 +187,29 @@ export const createEmployee = async (req: AuthRequest, res: Response, next: Next
 
     // Auto-create User record with RBAC role
     try {
-      const rbacRoleName = roleToRBACMapping[role] || 'Employee';
-      const rbacRole = await Role.findOne({ name: rbacRoleName });
+      let rbacRole = null;
+      
+      // If rbacRoleId was provided from form, use it directly
+      if (rbacRoleId) {
+        rbacRole = await Role.findById(rbacRoleId);
+      }
+      
+      // Fallback: map from old role system
+      if (!rbacRole) {
+        const rbacRoleName = roleToRBACMapping[role] || 'Employee';
+        rbacRole = await Role.findOne({ name: rbacRoleName });
+      }
       
       if (rbacRole) {
         await User.create({
+          name: employee.name,
           email: employee.email,
           employeeId: employee._id,
           roleIds: [rbacRole._id],
           status: 'active',
           password: employee.password, // Same password as employee
         });
-        console.log(`✅ Auto-created User for ${employee.name} with role ${rbacRoleName}`);
+        console.log(`✅ Auto-created User for ${employee.name} with role ${rbacRole.name}`);
       }
     } catch (userError: any) {
       console.log(`⚠️ Could not auto-create User for ${employee.name}: ${userError.message}`);
@@ -223,9 +240,16 @@ export const updateEmployee = async (req: AuthRequest, res: Response, next: Next
       req.body.role = 'intern';
     }
     
+    // Get the RBAC Role ID if provided
+    const rbacRoleId = req.body.rbacRoleId;
+    
+    // Remove rbacRoleId from request body (it's for User, not Employee)
+    const updateData = { ...req.body };
+    delete updateData.rbacRoleId;
+    
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true,
@@ -239,8 +263,38 @@ export const updateEmployee = async (req: AuthRequest, res: Response, next: Next
       });
     }
 
-    // If role was updated, sync to User record
-    if (req.body.role) {
+    // If rbacRoleId was provided, update User record directly with it
+    if (rbacRoleId) {
+      try {
+        const rbacRole = await Role.findById(rbacRoleId);
+        
+        if (rbacRole) {
+          const updateResult = await User.updateOne(
+            { employeeId: employee._id },
+            { $set: { roleIds: [rbacRole._id], updatedAt: new Date() } }
+          );
+          
+          if (updateResult.modifiedCount > 0) {
+            console.log(`🔄 Updated User role for ${employee.name}: ${rbacRole.name}`);
+          } else if (updateResult.matchedCount === 0) {
+            // User doesn't exist, create one
+            await User.create({
+              name: employee.name,
+              email: employee.email,
+              employeeId: employee._id,
+              roleIds: [rbacRole._id],
+              status: 'active',
+              password: employee.email, // Temporary password
+            });
+            console.log(`✅ Created User for ${employee.name} with role ${rbacRole.name}`);
+          }
+        }
+      } catch (syncError: any) {
+        console.log(`⚠️ Could not update User role for ${employee.name}: ${syncError.message}`);
+      }
+    } 
+    // Fallback: If old role field was updated, sync to User record
+    else if (req.body.role) {
       try {
         const rbacRoleName = roleToRBACMapping[req.body.role] || 'Employee';
         const rbacRole = await Role.findOne({ name: rbacRoleName });
