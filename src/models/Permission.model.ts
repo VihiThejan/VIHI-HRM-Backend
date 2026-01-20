@@ -1,5 +1,36 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+// Export enums for use in other parts of the application
+export const PERMISSION_MODULES = [
+  'dashboard',
+  'employees',
+  'recruitment',
+  'leaves',
+  'attendance',
+  'payroll',
+  'performance',
+  'interns',
+  'admin',
+] as const;
+
+export const PERMISSION_ACTIONS = [
+  'view',
+  'create',
+  'update',
+  'delete',
+  'approve',
+  'reject',
+  'manage',
+  'run',
+  'comment',
+  'export',
+  'import',
+  'review',
+] as const;
+
+export type PermissionModule = typeof PERMISSION_MODULES[number];
+export type PermissionAction = typeof PERMISSION_ACTIONS[number];
+
 export interface IPermission extends Document {
   key: string;
   module: string;
@@ -21,22 +52,12 @@ const permissionSchema = new Schema<IPermission>(
     module: {
       type: String,
       required: [true, 'Module is required'],
-      enum: [
-        'dashboard',
-        'employees',
-        'recruitment',
-        'leaves',
-        'attendance',
-        'payroll',
-        'performance',
-        'interns',
-        'admin',
-      ],
+      enum: PERMISSION_MODULES,
     },
     action: {
       type: String,
       required: [true, 'Action is required'],
-      enum: ['view', 'create', 'update', 'delete', 'approve', 'reject', 'manage', 'run', 'comment'],
+      enum: PERMISSION_ACTIONS,
     },
     description: {
       type: String,

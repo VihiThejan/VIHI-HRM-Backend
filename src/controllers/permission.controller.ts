@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import Permission from '../models/Permission.model';
+import Permission, { PERMISSION_MODULES, PERMISSION_ACTIONS } from '../models/Permission.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 // @desc    Get all permissions
@@ -20,7 +20,7 @@ export const getPermissions = async (req: AuthRequest, res: Response, next: Next
       data: permissions,
     });
   } catch (error) {
-    next(error);
+    next(error); 
   }
 };
 
@@ -127,6 +127,42 @@ export const deletePermission = async (req: AuthRequest, res: Response, next: Ne
     res.status(200).json({
       status: 'success',
       message: 'Permission deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get available modules and actions
+// @route   GET /api/admin/permissions/options
+// @access  Private (manage_permissions)
+export const getPermissionOptions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    res.status(200).json({
+      status: 'success',
+      data: {
+        modules: PERMISSION_MODULES,
+        actions: PERMISSION_ACTIONS,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get users who have a specific permission
+// @route   GET /api/admin/permissions/:key/users
+// @access  Private (manage_permissions)
+export const getPermissionUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { key } = req.params;
+    
+    // This is a placeholder - you would implement the logic to find users with this permission
+    // by checking which roles have this permission key and which users have those roles
+    res.status(200).json({
+      status: 'success',
+      data: [],
+      message: 'Feature not yet implemented',
     });
   } catch (error) {
     next(error);

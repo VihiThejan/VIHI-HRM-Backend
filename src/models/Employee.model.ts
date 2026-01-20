@@ -26,6 +26,7 @@ export interface IEmployee extends Document {
     phone: string;
     relation: string;
   };
+  googleDriveFolderId?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -122,6 +123,10 @@ const EmployeeSchema: Schema = new Schema(
       phone: String,
       relation: String,
     },
+    googleDriveFolderId: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,
@@ -131,7 +136,7 @@ const EmployeeSchema: Schema = new Schema(
 // Hash password before saving
 EmployeeSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password as string, salt);
   next();
