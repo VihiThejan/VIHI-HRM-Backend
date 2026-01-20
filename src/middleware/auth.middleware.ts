@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import Employee from '../models/Employee.model';
 import User from '../models/User.model';
 import Role from '../models/Role.model';
+import { connectDB } from '../config/database';
 
 export interface AuthRequest extends Request {
   user?: any; // Contains: id, role, permissions, roleIds
@@ -14,6 +15,7 @@ export const protect = async (
   next: NextFunction
 ) => {
   try {
+    await connectDB();
     let token: string | undefined;
 
     if (req.headers.authorization?.startsWith('Bearer')) {

@@ -4,6 +4,7 @@ import Employee from '../models/Employee.model';
 import User from '../models/User.model';
 import Role from '../models/Role.model';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { connectDB } from '../config/database';
 
 // Generate JWT Token
 const generateToken = (id: string): string => {
@@ -16,6 +17,7 @@ const generateToken = (id: string): string => {
 // @access  Public (should be protected in production)
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    await connectDB();
     const { name, email, password, phone, address, department, position, salary, role } = req.body;
 
     // Check if employee exists
@@ -64,6 +66,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 // @access  Public
 export const login = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    await connectDB();
     const { staffId, password } = req.body;
 
     // Check if staffId and password exist
@@ -86,7 +89,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Check if password matches
     const isMatch = await employee.comparePassword(password);
-    
+
     if (!isMatch) {
       return res.status(401).json({
         status: 'error',
@@ -114,7 +117,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Try to find associated User for RBAC
     let user = await User.findOne({ employeeId: employee._id }).select('+password');
-    
+
     if (user) {
       // User has RBAC roles, use those
       // Check if user is active
@@ -197,6 +200,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 // @access  Private
 export const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    await connectDB();
     // Find employee by ID
     const employee = await Employee.findById(req.user.id).select('-password');
 
@@ -278,6 +282,7 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
 // @access  Public (with userId from login response)
 export const resetPassword = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    await connectDB();
     const { userId, currentPassword, newPassword } = req.body;
 
     if (!userId || !currentPassword || !newPassword) {
