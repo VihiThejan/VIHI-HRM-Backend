@@ -51,6 +51,7 @@ const PORT = process.env.PORT || 5000;
 // Trust proxy - Required for Vercel and rate limiting to work correctly
 app.set('trust proxy', 1);
 
+
 // Connect to MongoDB and seed RBAC after connection
 (async () => {
   try {
@@ -62,6 +63,7 @@ app.set('trust proxy', 1);
     // Don't exit, continue running the server
   }
 })();
+
 
 // Middleware
 // CORS configuration - support multiple origins
