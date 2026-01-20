@@ -190,3 +190,46 @@ export const deleteRole = async (req: AuthRequest, res: Response, next: NextFunc
     next(error);
   }
 };
+
+// @desc    Clone an existing role
+// @route   POST /api/admin/roles/:id/clone
+// @access  Private (manage_roles)
+export const cloneRole = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { name, description } = req.body;
+
+    // Find the source role
+    const sourceRole = await Role.findById(req.params.id);
+    if (!sourceRole) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Source role not found',
+      });
+    }
+
+    // Check if new role name already exists
+    const existingRole = await Role.findOne({ name });
+    if (existingRole) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Role with this name already exists',
+      });
+    }
+
+    // Create new role with same permissions
+    const newRole = await Role.create({
+      name: name || `${sourceRole.name} (Copy)`,
+      description: description || sourceRole.description,
+      permissionKeys: [...sourceRole.permissionKeys],
+      isSystem: false,
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: newRole,
+      message: `Role cloned from "${sourceRole.name}"`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

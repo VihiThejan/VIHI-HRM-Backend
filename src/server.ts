@@ -23,6 +23,7 @@ import diaryRoutes from './routes/diary.routes';
 import permissionRoutes from './routes/permission.routes';
 import roleRoutes from './routes/role.routes';
 import userRoutes from './routes/user.routes';
+import googleDriveRoutes from './routes/googleDrive.routes';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
@@ -46,14 +47,20 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-super-secret-jwt
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-connectDB();
+// Trust proxy - Required for Vercel and rate limiting to work correctly
+app.set('trust proxy', 1);
 
-// Seed RBAC on startup
-seedPermissionsAndRoles().catch(err => {
-  logger.error('Failed to seed RBAC:', err);
-  // Don't exit, continue running the server
-});
+// Connect to MongoDB and seed RBAC after connection
+(async () => {
+  try {
+    await connectDB();
+    // Seed RBAC after DB connection is established
+    await seedPermissionsAndRoles();
+  } catch (err) {
+    logger.error('Failed to connect to DB or seed RBAC:', err);
+    // Don't exit, continue running the server
+  }
+})();
 
 // Middleware
 // CORS configuration - support multiple origins
@@ -67,11 +74,25 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
+    // Check if origin is in allowed list
     if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    // In development, allow localhost and local network IPs
+    if (process.env.NODE_ENV === 'development') {
+      // Allow localhost with any port
+      if (origin.match(/^http:\/\/localhost:\d+$/)) {
+        return callback(null, true);
+      }
+      // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+      if (origin.match(/^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):\d+$/)) {
+        return callback(null, true);
+      }
+    }
+
+    logger.warn(`CORS blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -88,7 +109,6 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use('/api/templates', express.static(path.join(__dirname, '../Template')));
 
 // Rate limiting (after CORS)
 app.use('/api', rateLimiter);
@@ -115,6 +135,7 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/interns', internRoutes);
 app.use('/api/diary', diaryRoutes);
+app.use('/api/google-drive', googleDriveRoutes);
 
 // Admin routes
 app.use('/api/admin/permissions', permissionRoutes);
@@ -132,8 +153,8 @@ app.use((req: Request, res: Response) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
+// Start server - bind to 0.0.0.0 to accept connections from all network interfaces
+app.listen(Number(PORT), '0.0.0.0', () => {
   logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 
@@ -144,3 +165,5 @@ process.on('unhandledRejection', (err: Error) => {
 });
 
 export default app;
+
+
