@@ -17,13 +17,30 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 
     const users = await User.find(query)
       .populate('roleIds', 'name description')
-      .populate('employeeId', 'name department position')
+      .populate('employeeId', 'name department position designation')
       .select('-password')
       .sort({ createdAt: -1 });
 
+    // Transform to show employee designation as role
+    const transformedUsers = users.map(user => {
+      const userObj = user.toObject();
+      const employee = userObj.employeeId as any;
+      
+      // Use employee's designation or position as role display
+      const designationRole = employee?.designation || employee?.position;
+      
+      return {
+        ...userObj,
+        // Show designation/position as roles if available, otherwise show RBAC roles
+        roles: designationRole 
+          ? [{ _id: 'designation', name: designationRole, description: 'Employee Designation' }]
+          : (userObj.roleIds || []),
+      };
+    });
+
     res.status(200).json({
       status: 'success',
-      data: users,
+      data: transformedUsers,
     });
   } catch (error) {
     next(error);
@@ -47,9 +64,16 @@ export const getUser = async (req: AuthRequest, res: Response, next: NextFunctio
       });
     }
 
+    // Transform roleIds to roles for frontend compatibility
+    const userObj = user.toObject();
+    const transformedUser = {
+      ...userObj,
+      roles: userObj.roleIds || [],
+    };
+
     res.status(200).json({
       status: 'success',
-      data: user,
+      data: transformedUser,
     });
   } catch (error) {
     next(error);
@@ -284,6 +308,97 @@ export const resetUserPassword = async (req: AuthRequest, res: Response, next: N
     res.status(200).json({
       status: 'success',
       message: 'Password reset successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update user status (active/inactive/suspended)
+// @route   PUT /api/admin/users/:id/status
+// @access  Private (manage_users)
+export const updateUserStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { status } = req.body;
+
+    if (!['active', 'inactive', 'suspended'].includes(status)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid status. Must be active, inactive, or suspended',
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found',
+      });
+    }
+
+    // Prevent user from changing their own status
+    if (user._id.toString() === req.user.id.toString()) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cannot change your own status',
+      });
+    }
+
+    user.status = status;
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: { status: user.status },
+      message: `User status updated to ${status}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get user's effective permissions
+// @route   GET /api/admin/users/:id/permissions
+// @access  Private (manage_users)
+export const getUserPermissions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .populate('roleIds', 'name permissionKeys')
+      .select('name email');
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found',
+      });
+    }
+
+    // Get all permissions from all roles
+    const roles = user.roleIds as any[];
+    const permissionsByRole: { [roleName: string]: string[] } = {};
+    const allPermissionKeys: string[] = [];
+
+    roles.forEach((role: any) => {
+      permissionsByRole[role.name] = role.permissionKeys;
+      allPermissionKeys.push(...role.permissionKeys);
+    });
+
+    // Deduplicate permissions
+    const uniquePermissions = [...new Set(allPermissionKeys)];
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+        roles: roles.map((r: any) => ({ _id: r._id, name: r.name })),
+        permissionsByRole,
+        effectivePermissions: uniquePermissions.sort(),
+        totalPermissions: uniquePermissions.length,
+      },
     });
   } catch (error) {
     next(error);

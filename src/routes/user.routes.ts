@@ -7,6 +7,8 @@ import {
   updateUserRoles,
   deleteUser,
   resetUserPassword,
+  updateUserStatus,
+  getUserPermissions,
 } from '../controllers/user.controller';
 import { protect } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/permission.middleware';
@@ -28,5 +30,8 @@ router.route('/:id')
 
 router.put('/:id/roles', updateUserRoles);
 router.put('/:id/password', resetUserPassword);
+router.put('/:id/status', updateUserStatus);
+router.get('/:id/permissions', getUserPermissions);
 
 export default router;
+

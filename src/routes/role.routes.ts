@@ -5,6 +5,7 @@ import {
   createRole,
   updateRole,
   deleteRole,
+  cloneRole,
 } from '../controllers/role.controller';
 import { protect } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/permission.middleware';
@@ -24,4 +25,8 @@ router.route('/:id')
   .put(updateRole)
   .delete(deleteRole);
 
+// Clone a role
+router.post('/:id/clone', cloneRole);
+
 export default router;
+

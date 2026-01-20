@@ -16,7 +16,7 @@ import {
   uploadInternWeekSubmission
 } from '../controllers/diary.controller';
 import { protect } from '../middleware/auth.middleware';
-import { upload } from '../utils/fileUpload';
+import { upload, uploadMemory } from '../utils/fileUpload';
 
 const router = Router();
 
@@ -28,7 +28,7 @@ router.post('/update-generated-entry', protect, updateGeneratedEntry);
 router.post('/generate-entry', protect, generateDailyEntry);
 router.post('/submit-entry', protect, submitDailyEntry);
 router.post('/submit-week', protect, submitWeekForFeedback);
-router.post('/:diaryId/submit-document', protect, upload.single('file'), uploadInternWeekSubmission);
+router.post('/:diaryId/submit-document', protect, uploadMemory.single('file'), uploadInternWeekSubmission);
 router.get('/:diaryId/download-signed', protect, downloadSignedPDF);
 
 // Supervisor routes
@@ -36,6 +36,6 @@ router.get('/pending-review', protect, getPendingDiariesForSupervisor);
 router.post('/:diaryId/regenerate-feedback', protect, regenerateSupervisorFeedback);
 router.get('/:diaryId/download-doc', protect, downloadDiaryAsDoc);
 router.post('/:diaryId/submit-signed', protect, submitSignedDiary);
-router.post('/:diaryId/upload-signed', protect, upload.single('file'), uploadSignedDiary);
+router.post('/:diaryId/upload-signed', protect, uploadMemory.single('file'), uploadSignedDiary);
 
 export default router;
