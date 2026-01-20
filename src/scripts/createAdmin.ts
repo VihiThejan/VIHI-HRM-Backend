@@ -15,18 +15,15 @@ const createAdminUser = async () => {
     const staffId = 'VIHI001';
 
     // Check if admin exists by staff ID or email
-    const existingAdmin = await Employee.findOne({ 
-      $or: [{ email: 'admin@vihi.com' }, { staffId }] 
+    const existingAdmin = await Employee.findOne({
+      $or: [{ email: 'admin@vihi.com' }, { staffId }]
     });
-    
+
     if (existingAdmin) {
-      console.log('ℹ️  Admin user already exists');
-      console.log('Staff ID:', existingAdmin.staffId);
-      console.log('Email:', existingAdmin.email);
-      console.log('Role:', existingAdmin.role);
-      console.log('\n💡 To login, use:');
-      console.log('Staff ID:', existingAdmin.staffId);
-      console.log('Password: (Use the staff ID as password if not changed)');
+      console.log('ℹ️  Admin user already exists. Updating password...');
+      existingAdmin.password = staffId;
+      await existingAdmin.save();
+      console.log('✅ Admin password updated to:', staffId);
       process.exit(0);
     }
 

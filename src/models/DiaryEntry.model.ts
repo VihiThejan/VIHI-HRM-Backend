@@ -35,6 +35,9 @@ export interface IDiaryEntry extends Document {
   downloadedAt?: Date;
   internSubmissionUrl?: string; // Uploaded by intern
   internSubmissionDate?: Date;
+  googleDriveFolderId?: string; // Week folder ID in Google Drive
+  signedDocumentDriveId?: string; // Signed PDF file ID in Google Drive
+  signedDocumentDriveLink?: string; // Web view link for signed document
   createdAt: Date;
   updatedAt: Date;
 }
@@ -128,7 +131,10 @@ const DiaryEntrySchema = new Schema<IDiaryEntry>({
   },
   downloadedAt: Date,
   internSubmissionUrl: String,
-  internSubmissionDate: Date
+  internSubmissionDate: Date,
+  googleDriveFolderId: String,
+  signedDocumentDriveId: String,
+  signedDocumentDriveLink: String
 }, {
   timestamps: true
 });

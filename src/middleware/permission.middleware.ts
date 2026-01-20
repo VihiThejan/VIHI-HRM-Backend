@@ -7,6 +7,15 @@ import { AuthRequest } from './auth.middleware';
  */
 export const requirePermission = (permissionKey: string) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
+    // Debug logging
+    console.log('DEBUG Permission Check:', {
+      requiredPermission: permissionKey,
+      userEmail: req.user?.email,
+      hasPermissions: !!req.user?.permissions,
+      permissionCount: req.user?.permissions?.length || 0,
+      hasRequiredPermission: req.user?.permissions?.includes(permissionKey),
+    });
+
     // Check if user is authenticated
     if (!req.user) {
       return res.status(401).json({
@@ -17,6 +26,7 @@ export const requirePermission = (permissionKey: string) => {
 
     // Check if user has permissions array
     if (!req.user.permissions || !Array.isArray(req.user.permissions)) {
+      console.log('DEBUG: User permissions array is missing or invalid');
       return res.status(403).json({
         status: 'error',
         message: 'No permissions found for user',
@@ -25,6 +35,8 @@ export const requirePermission = (permissionKey: string) => {
 
     // Check if user has the required permission
     if (!req.user.permissions.includes(permissionKey)) {
+      console.log('DEBUG: User does not have permission:', permissionKey);
+      console.log('DEBUG: User permissions:', req.user.permissions);
       return res.status(403).json({
         status: 'error',
         message: `Permission denied. Required permission: ${permissionKey}`,
