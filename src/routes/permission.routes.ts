@@ -19,14 +19,15 @@ router.use(protect);
 // Options endpoint - available to any authenticated user (just metadata)
 router.get('/options', getPermissionOptions);
 
+// Grouped permissions - available to any authenticated user (needed for role management UI)
+router.get('/grouped', getPermissionsGrouped);
+
 // All other routes require manage_permissions
 router.use(requirePermission('manage_permissions'));
 
 router.route('/')
   .get(getPermissions)
   .post(createPermission);
-
-router.get('/grouped', getPermissionsGrouped);
 
 // Get users who have a specific permission
 router.get('/:key/users', getPermissionUsers);
