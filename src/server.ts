@@ -5,10 +5,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 
 // Import configurations
 import { connectDB } from './config/database';
 import { logger } from './config/logger';
+
+// Import WebSocket server
+import TimeTrackingWebSocketServer from './websocket/timeTracking.ws';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -160,9 +164,14 @@ app.use((req: Request, res: Response) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
+// Create HTTP server and attach WebSocket
+const httpServer = createServer(app);
+const wsServer = new TimeTrackingWebSocketServer(httpServer);
+
 // Start server - bind to 0.0.0.0 to accept connections from all network interfaces
-app.listen(Number(PORT), '0.0.0.0', () => {
+httpServer.listen(Number(PORT), '0.0.0.0', () => {
   logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  logger.info(`🔌 WebSocket server available at ws://localhost:${PORT}/ws/time-tracking`);
 });
 
 // Handle unhandled promise rejections

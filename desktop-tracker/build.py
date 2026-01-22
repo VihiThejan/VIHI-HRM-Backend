@@ -1,5 +1,5 @@
 """
-Build script for VIHI Intern Tracker Desktop Application
+Build script for VIHI Time Tracker Desktop Application
 Creates standalone executable for Windows
 """
 
@@ -13,7 +13,7 @@ def main():
     os.chdir(script_dir)
     
     print("=" * 50)
-    print("VIHI Intern Tracker - Build Script")
+    print("VIHI Time Tracker - Build Script")
     print("=" * 50)
     
     # Check if PyInstaller is installed
@@ -41,8 +41,9 @@ def main():
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--windowed",
-        "--name", "VIHI-InternTracker",
-        "intern_tracker.py"
+        "--name", "VIHI-TimeTracker",
+        "--add-data", "README.md;.",
+        "time_tracker.py"
     ]
     
     result = subprocess.run(pyinstaller_args)
@@ -51,7 +52,10 @@ def main():
         print("\n" + "=" * 50)
         print("BUILD SUCCESSFUL!")
         print("=" * 50)
-        print(f"\nExecutable: {os.path.join(script_dir, 'dist', 'VIHI-InternTracker.exe')}")
+        exe_path = os.path.join(script_dir, 'dist', 'VIHI-TimeTracker.exe')
+        print(f"\nExecutable: {exe_path}")
+        print(f"\nTo install the protocol handler, run:")
+        print(f"  python protocol_handler.py --register --exe \"{exe_path}\"")
     else:
         print("\nBUILD FAILED!")
         sys.exit(1)
