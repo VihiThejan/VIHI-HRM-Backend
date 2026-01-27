@@ -97,16 +97,35 @@ def main():
         if params['token']:
             import subprocess
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            tracker_script = os.path.join(script_dir, 'time_tracker.py')
             
-            cmd = [
-                sys.executable, tracker_script,
-                '--token', params['token'],
-                '--name', params['name'],
-                '--ws-url', params['ws_url'],
-                '--api-url', params['api_url']
-            ]
-            subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            # Try to use the executable first, fallback to Python script
+            exe_path = os.path.join(script_dir, 'dist', 'VIHI-TimeTracker.exe')
+            
+            if os.path.exists(exe_path):
+                # Use the executable
+                cmd = [
+                    exe_path,
+                    '--token', params['token'],
+                    '--name', params['name'],
+                    '--ws-url', params['ws_url'],
+                    '--api-url', params['api_url']
+                ]
+            else:
+                # Fallback to Python script
+                tracker_script = os.path.join(script_dir, 'time_tracker.py')
+                cmd = [
+                    sys.executable, tracker_script,
+                    '--token', params['token'],
+                    '--name', params['name'],
+                    '--ws-url', params['ws_url'],
+                    '--api-url', params['api_url']
+                ]
+            
+            # Launch without console window for exe, with console for Python
+            if exe_path and os.path.exists(exe_path):
+                subprocess.Popen(cmd)
+            else:
+                subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
     else:
         print("VIHI Time Tracker - Protocol Handler")
         print("\nUsage:")

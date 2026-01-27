@@ -13,6 +13,29 @@ A Python desktop application that tracks mouse movements and working time for in
 
 ## Installation
 
+### Quick Start (Recommended for Web Launch)
+
+1. **Run the automated setup:**
+   ```bash
+   # Windows
+   .\setup.bat
+   ```
+
+2. **Build the standalone executable:**
+   ```bash
+   python build.py
+   ```
+
+3. **Register the protocol handler (enables web launch):**
+   ```bash
+   .\install_protocol.bat
+   ```
+
+4. **Launch from web:**
+   - Go to the Interns page in VIHI HRM
+   - Click "Start Tracking" button
+   - The desktop app will launch automatically!
+
 ### Option 1: Run from Source (Development)
 
 1. **Install Python 3.8+** (if not already installed)
