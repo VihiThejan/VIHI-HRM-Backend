@@ -15,15 +15,15 @@ export const startSession = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
 
     if (!userId) {
       res.status(401).json({ status: 'error', message: 'User not authenticated' });
       return;
     }
 
-    // Check if user is an intern
-    if (req.user?.role !== 'intern') {
+    // Allow all authenticated users to track time
+    if (false) { // Disabled role check
       res.status(403).json({ 
         status: 'error', 
         message: 'Only interns can use time tracking' 
@@ -89,7 +89,7 @@ export const receiveHeartbeat = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
     const { sessionId, activityPercent, mouseMovements, isIdle, activeSeconds } = req.body;
 
     if (!userId) {
@@ -151,7 +151,7 @@ export const endSession = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
     const { 
       sessionId, 
       total_active_seconds, 
@@ -297,7 +297,7 @@ export const getActiveSession = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
 
     if (!userId) {
       res.status(401).json({ status: 'error', message: 'User not authenticated' });
@@ -336,7 +336,7 @@ export const getTodaySummary = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
     const targetId = req.params.internId || userId;
 
     if (!userId) {
@@ -402,7 +402,7 @@ export const getSessionHistory = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
     const targetId = req.params.internId || userId;
     const { startDate, endDate, page = 1, limit = 20 } = req.query;
 
@@ -465,7 +465,7 @@ export const getWeeklySummary = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
     const targetId = req.params.internId || userId;
     const { weekStart } = req.query;
 
@@ -570,18 +570,22 @@ export const generateLaunchToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
 
     if (!userId) {
       res.status(401).json({ status: 'error', message: 'User not authenticated' });
       return;
     }
 
-    // Check if user is an intern
-    if (req.user?.role !== 'intern') {
+    // Check if user has permission to track time
+    const hasPermission = req.user?.permissions?.includes('track_own_time') || 
+                          req.user?.role === 'intern' ||
+                          true; // Allow all authenticated users for now
+
+    if (!hasPermission) {
       res.status(403).json({ 
         status: 'error', 
-        message: 'Only interns can use time tracking' 
+        message: 'You do not have permission to use time tracking' 
       });
       return;
     }
@@ -593,8 +597,7 @@ export const generateLaunchToken = async (
       return;
     }
 
-    // For now, we'll use the existing JWT token
-    // In production, you might want to create a short-lived token specifically for the desktop app
+    // Use the existing JWT token for the desktop app
     const token = req.headers.authorization?.replace('Bearer ', '');
 
     res.status(200).json({
@@ -604,7 +607,7 @@ export const generateLaunchToken = async (
         internName: employee.name,
         internId: userId,
         expiresIn: 3600, // 1 hour
-        launchUrl: `vihi-intern-tracker://start?token=${token}&name=${encodeURIComponent(employee.name)}`,
+        launchUrl: `vihi-tracker://start?token=${token}&name=${encodeURIComponent(employee.name)}`,
       },
     });
   } catch (error) {

@@ -1,9 +1,9 @@
 @echo off
 echo ========================================
-echo VIHI Intern Tracker - Install Protocol
+echo VIHI Time Tracker - Install Protocol
 echo ========================================
 echo.
-echo This will register the vihi-intern-tracker:// URL protocol
+echo This will register the vihi-tracker:// URL protocol
 echo.
 
 set SCRIPT_DIR=%~dp0
@@ -15,9 +15,9 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-if exist "%SCRIPT_DIR%dist\VIHI-InternTracker.exe" (
-    echo Found executable: %SCRIPT_DIR%dist\VIHI-InternTracker.exe
-    python "%SCRIPT_DIR%protocol_handler.py" --register --exe "%SCRIPT_DIR%dist\VIHI-InternTracker.exe"
+if exist "%SCRIPT_DIR%dist\VIHI-TimeTracker.exe" (
+    echo Found executable: %SCRIPT_DIR%dist\VIHI-TimeTracker.exe
+    python "%SCRIPT_DIR%protocol_handler.py" --register --exe "%SCRIPT_DIR%dist\VIHI-TimeTracker.exe"
 ) else (
     echo No executable found. Using Python script.
     python "%SCRIPT_DIR%protocol_handler.py" --register
@@ -25,4 +25,6 @@ if exist "%SCRIPT_DIR%dist\VIHI-InternTracker.exe" (
 
 echo.
 echo Protocol registration complete!
+echo.
+echo You can now launch the app from the web using vihi-tracker:// links
 pause

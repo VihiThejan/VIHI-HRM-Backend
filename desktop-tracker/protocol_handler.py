@@ -1,6 +1,6 @@
 """
-URL Protocol Handler for VIHI Intern Tracker
-Registers vihi-intern-tracker:// protocol so web app can launch desktop app
+URL Protocol Handler for VIHI Time Tracker
+Registers vihi-tracker:// protocol so web app can launch desktop app
 """
 
 import sys
@@ -10,8 +10,8 @@ import argparse
 from urllib.parse import urlparse, parse_qs
 
 def register_protocol(exe_path: str):
-    """Register the vihi-intern-tracker:// protocol handler"""
-    protocol = "vihi-intern-tracker"
+    """Register the vihi-tracker:// protocol handler"""
+    protocol = "vihi-tracker"
     
     try:
         key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, f"Software\\Classes\\{protocol}")
@@ -24,6 +24,7 @@ def register_protocol(exe_path: str):
         winreg.CloseKey(command_key)
         
         print(f"✓ Protocol '{protocol}://' registered successfully!")
+        print(f"  Executable: {exe_path}")
         return True
     except Exception as e:
         print(f"✗ Failed to register protocol: {e}")
@@ -32,7 +33,7 @@ def register_protocol(exe_path: str):
 
 def unregister_protocol():
     """Remove the protocol handler"""
-    protocol = "vihi-intern-tracker"
+    protocol = "vihi-tracker"
     
     try:
         winreg.DeleteKey(winreg.HKEY_CURRENT_USER, f"Software\\Classes\\{protocol}\\shell\\open\\command")
@@ -57,13 +58,14 @@ def parse_protocol_url(url: str) -> dict:
     return {
         'action': parsed.netloc,
         'token': params.get('token', [None])[0],
-        'name': params.get('name', ['Intern'])[0],
+        'name': params.get('name', ['User'])[0],
+        'ws_url': params.get('ws_url', ['ws://localhost:5000'])[0],
         'api_url': params.get('api_url', ['http://localhost:5000/api'])[0],
     }
 
 
 def main():
-    parser = argparse.ArgumentParser(description='VIHI Intern Tracker Protocol Handler')
+    parser = argparse.ArgumentParser(description='VIHI Time Tracker Protocol Handler')
     parser.add_argument('url', nargs='?', help='Protocol URL to handle')
     parser.add_argument('--register', action='store_true', help='Register protocol')
     parser.add_argument('--unregister', action='store_true', help='Unregister protocol')
@@ -76,9 +78,13 @@ def main():
             exe_path = os.path.abspath(args.exe)
         else:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            exe_path = os.path.join(script_dir, 'dist', 'VIHI-InternTracker.exe')
+            exe_path = os.path.join(script_dir, 'dist', 'VIHI-TimeTracker.exe')
             if not os.path.exists(exe_path):
-                exe_path = os.path.abspath(__file__)
+                # Use python script as fallback
+                exe_path = os.path.join(script_dir, 'time_tracker.py')
+                # We need to wrap it with python
+                print(f"Warning: Executable not found at dist/VIHI-TimeTracker.exe")
+                print(f"Registering with Python script: {exe_path}")
         register_protocol(exe_path)
         return
     
@@ -91,19 +97,20 @@ def main():
         if params['token']:
             import subprocess
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            tracker_script = os.path.join(script_dir, 'intern_tracker.py')
+            tracker_script = os.path.join(script_dir, 'time_tracker.py')
             
             cmd = [
                 sys.executable, tracker_script,
                 '--token', params['token'],
                 '--name', params['name'],
+                '--ws-url', params['ws_url'],
                 '--api-url', params['api_url']
             ]
             subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
     else:
-        print("VIHI Intern Tracker - Protocol Handler")
+        print("VIHI Time Tracker - Protocol Handler")
         print("\nUsage:")
-        print("  Register:   python protocol_handler.py --register")
+        print("  Register:   python protocol_handler.py --register [--exe path/to/exe]")
         print("  Unregister: python protocol_handler.py --unregister")
 
 

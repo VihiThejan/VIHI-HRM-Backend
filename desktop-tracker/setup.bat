@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo VIHI Intern Tracker - Windows Setup
+echo VIHI Time Tracker - Windows Setup
 echo ========================================
 echo.
 
@@ -34,9 +34,12 @@ echo ========================================
 echo.
 echo To run the application:
 echo 1. Run: venv\Scripts\activate.bat
-echo 2. Run: python intern_tracker.py --token YOUR_TOKEN --name "Your Name"
+echo 2. Run: python time_tracker.py --token YOUR_TOKEN --name "Your Name"
 echo.
 echo Or build the executable:
 echo   python build.py
+echo.
+echo Then register the URL protocol:
+echo   python protocol_handler.py --register
 echo.
 pause
