@@ -102,7 +102,7 @@ class MouseTracker:
         was_active = self.is_active
         self.is_active = False
         
-        is_idle = time_since_movement >= IDLE_TIMEOUT
+        is_idle = time_since_movement >= IDLE_TIMEOUT 
         
         if len(self.movement_history) > 0:
             activity_percent = int((sum(self.movement_history) / len(self.movement_history)) * 100)
@@ -221,6 +221,7 @@ class WebSocketClient(QThread):
                 self.ws.send(json.dumps(data))
             except Exception as e:
                 self.signals.error.emit(f"Failed to send message: {str(e)}")
+
     
     def send_heartbeat(self, active_seconds: int, activity_percent: int, is_idle: bool, movements: int):
         """Send heartbeat with activity data"""
@@ -683,19 +684,31 @@ def main():
     parser.add_argument("--ws-url", default=DEFAULT_WS_URL, help="WebSocket server URL")
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help="API server URL")
     
-    args = parser.parse_args()
-    
-    # Handle protocol URL (vihi-tracker://start?token=xxx&name=yyy)
+    # Handle protocol URL (vihi-tracker://start?token=xxx&name=yyy) BEFORE parsing args
     if len(sys.argv) > 1 and sys.argv[1].startswith("vihi-"):
         from urllib.parse import urlparse, parse_qs
         url = sys.argv[1]
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
         
-        args.token = params.get("token", [args.token])[0]
-        args.name = params.get("name", [args.name])[0]
-        args.ws_url = params.get("ws_url", [args.ws_url])[0]
-        args.api_url = params.get("api_url", [args.api_url])[0]
+        # Extract parameters from URL
+        token = params.get("token", [None])[0]
+        name = params.get("name", ["User"])[0]
+        ws_url = params.get("ws_url", [DEFAULT_WS_URL])[0]
+        api_url = params.get("api_url", [DEFAULT_API_URL])[0]
+        
+        # Replace sys.argv with parsed arguments so argparse works correctly
+        sys.argv = [sys.argv[0]]
+        if token:
+            sys.argv.extend(["--token", token])
+        if name:
+            sys.argv.extend(["--name", name])
+        if ws_url:
+            sys.argv.extend(["--ws-url", ws_url])
+        if api_url:
+            sys.argv.extend(["--api-url", api_url])
+    
+    args = parser.parse_args()
     
     # If we have a launch token, exchange it for a session token
     if args.launch_token and not args.token:

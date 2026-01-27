@@ -99,19 +99,24 @@ class TimeTrackingWebSocketServer {
 
   private async authenticateToken(token: string): Promise<{ userId: string; userName: string } | null> {
     try {
+      logger.info('Attempting to authenticate WebSocket token', { tokenLength: token.length });
+      
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+      logger.info('Token decoded successfully', { decodedId: decoded.id });
       
       const employee = await Employee.findById(decoded.id);
       if (!employee) {
+        logger.error('Employee not found for decoded ID', { decodedId: decoded.id });
         return null;
       }
 
+      logger.info('WebSocket authentication successful', { userId: employee._id, userName: employee.name });
       return {
         userId: employee._id.toString(),
         userName: employee.name
       };
     } catch (error) {
-      logger.error('Token verification failed', { error });
+      logger.error('Token verification failed', { error, message: (error as Error).message });
       return null;
     }
   }
