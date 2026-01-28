@@ -107,6 +107,7 @@ const defaultRoles = [
       'delete_performance',
       'view_interns',
       'manage_interns',
+      'track_own_time',
     ],
   },
   {
@@ -129,6 +130,7 @@ const defaultRoles = [
       'update_performance',
       'view_interns',
       'comment_intern_diary',
+      'track_own_time',
     ],
   },
   {
@@ -142,6 +144,7 @@ const defaultRoles = [
       'create_attendance',
       'view_attendance',
       'view_performance',
+      'track_own_time',
     ],
   },
   {
@@ -172,6 +175,7 @@ const defaultRoles = [
       'approve_payroll',
       'view_performance',
       'view_interns',
+      'track_own_time',
       'comment_intern_diary',
     ],
   },
@@ -183,6 +187,7 @@ const defaultRoles = [
       'view_dashboard',
       'view_interns',
       'comment_intern_diary',
+      'track_own_time',
       'view_performance',
     ],
   },
