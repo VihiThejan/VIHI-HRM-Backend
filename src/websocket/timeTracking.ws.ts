@@ -124,6 +124,12 @@ class TimeTrackingWebSocketServer {
   private async handleMessage(ws: AuthenticatedWebSocket, data: RawData) {
     try {
       const message: WebSocketMessage = JSON.parse(data.toString());
+      
+      logger.info(`[WS] Received message from client`, {
+        userId: ws.userId,
+        messageType: message.type,
+        messageData: message
+      });
 
       switch (message.type) {
         case 'start_session':
