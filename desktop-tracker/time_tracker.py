@@ -11,9 +11,25 @@ import threading
 import argparse
 import websocket
 import requests
+import os
 from datetime import datetime, timedelta
 from collections import deque
 from urllib.parse import urlencode
+
+# Setup file logging
+LOG_FILE = r'D:\Projects\HRM\VIHI-HRM-Backend\desktop-tracker\debug_log.txt'
+def log_to_file(message):
+    try:
+        with open(LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(f"{datetime.now().isoformat()} - {message}\n")
+            f.flush()
+    except Exception as e:
+        # If logging fails, try to write error to a temp file
+        try:
+            with open(r'C:\Windows\Temp\vihi_debug_error.txt', 'a') as ef:
+                ef.write(f"Logging error: {e}\n")
+        except:
+            pass
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -153,41 +169,55 @@ class WebSocketClient(QThread):
     
     def _on_open(self, ws):
         """Handle WebSocket connection opened"""
+        print("[DEBUG] WebSocket connected!")
+        log_to_file("[_on_open] WebSocket connected!")
         self.connected = True
         self.signals.connection_status.emit(True)
         self.signals.update_status.emit("Connected to server")
         
         # Send start session message
+        # Delay to ensure WebSocket connection is fully established
+        time.sleep(0.5)
+        print("[DEBUG] Sending start_session message...")
+        log_to_file("[_on_open] About to send start_session message (after 500ms delay)")
         self.send_message({
             "type": "start_session",
             "timestamp": datetime.now().isoformat(),
-            "deviceInfo": {
+            "deviceInfo": json.dumps({
                 "platform": sys.platform,
                 "version": "1.0.0"
-            }
+            })
         })
+        print("[DEBUG] start_session message sent")
+        log_to_file("[_on_open] start_session send_message call completed")
     
     def _on_message(self, ws, message):
         """Handle incoming WebSocket messages"""
         try:
+            print(f"[DEBUG] Received message: {message}")
+            log_to_file(f"[_on_message] Received: {message[:200]}...")
             data = json.loads(message)
             msg_type = data.get("type")
             
             if msg_type == "session_started":
                 self.session_id = data.get("sessionId")
+                print(f"[DEBUG] Session started! ID: {self.session_id}")
                 self.signals.session_started.emit(self.session_id)
                 self.signals.update_status.emit("Session started")
             
             elif msg_type == "session_ended":
+                print("[DEBUG] Session ended by server")
                 self.signals.session_ended.emit()
                 self.signals.update_status.emit("Session ended")
             
             elif msg_type == "heartbeat_ack":
                 # Server acknowledged heartbeat
                 total_seconds = data.get("totalActiveSeconds", 0)
+                print(f"[DEBUG] Heartbeat ack received. Total: {total_seconds}s")
                 self.signals.update_time.emit(total_seconds)
             
             elif msg_type == "error":
+                print(f"[DEBUG] Error from server: {data.get('message')}")
                 self.signals.error.emit(data.get("message", "Unknown error"))
             
             elif msg_type == "sync":
@@ -196,15 +226,20 @@ class WebSocketClient(QThread):
                 self.signals.update_activity.emit(data.get("averageActivity", 0))
                 
         except json.JSONDecodeError:
+            print("[DEBUG] Invalid JSON from server")
             self.signals.error.emit("Invalid message from server")
     
     def _on_error(self, ws, error):
         """Handle WebSocket errors"""
+        print(f"[DEBUG] WebSocket error: {str(error)}")
+        log_to_file(f"[_on_error] {error}")
         self.signals.error.emit(f"Connection error: {str(error)}")
         self.signals.connection_status.emit(False)
     
     def _on_close(self, ws, close_status_code, close_msg):
         """Handle WebSocket connection closed"""
+        print(f"[DEBUG] WebSocket closed: code={close_status_code}, msg={close_msg}")
+        log_to_file(f"[_on_close] Code: {close_status_code}, Message: {close_msg}")
         self.connected = False
         self.signals.connection_status.emit(False)
         
@@ -216,15 +251,29 @@ class WebSocketClient(QThread):
     
     def send_message(self, data: dict):
         """Send message to server"""
+        print(f"[DEBUG] send_message called. ws={self.ws is not None}, connected={self.connected}")
+        log_to_file(f"[send_message] Called. ws exists: {self.ws is not None}, connected: {self.connected}")
+        
         if self.ws and self.connected:
             try:
-                self.ws.send(json.dumps(data))
+                msg = json.dumps(data)
+                print(f"[DEBUG] Sending: {msg}")
+                log_to_file(f"[send_message] Attempting to send: {msg[:100]}...")
+                self.ws.send(msg)
+                print(f"[DEBUG] Message sent successfully")
+                log_to_file(f"[send_message] ws.send() completed successfully")
             except Exception as e:
+                print(f"[DEBUG] Failed to send message: {str(e)}")
+                log_to_file(f"[send_message] ERROR: {e}")
                 self.signals.error.emit(f"Failed to send message: {str(e)}")
+        else:
+            print(f"[DEBUG] Cannot send message - not connected")
+            log_to_file(f"[send_message] SKIPPED - not connected or no ws")
 
     
     def send_heartbeat(self, active_seconds: int, activity_percent: int, is_idle: bool, movements: int):
         """Send heartbeat with activity data"""
+        print(f"[DEBUG] Sending heartbeat: {active_seconds}s, activity:{activity_percent}%, idle:{is_idle}")
         self.send_message({
             "type": "heartbeat",
             "sessionId": self.session_id,
@@ -677,6 +726,10 @@ def get_token_from_web(api_url: str, launch_token: str) -> dict:
 
 
 def main():
+    log_to_file("[main] Function started")
+    log_to_file(f"[main] Working directory: {os.getcwd()}")
+    log_to_file(f"[main] Script location: {os.path.dirname(__file__) if __file__ else 'unknown'}")
+    
     parser = argparse.ArgumentParser(description="VIHI Time Tracker Desktop Application")
     parser.add_argument("--token", "-t", help="Authentication token")
     parser.add_argument("--launch-token", "-l", help="Launch token from web app")
@@ -746,4 +799,6 @@ def main():
 
 
 if __name__ == "__main__":
+    log_to_file("========== VIHI Time Tracker Started ==========")
+    log_to_file(f"Arguments: {sys.argv}")
     main()
