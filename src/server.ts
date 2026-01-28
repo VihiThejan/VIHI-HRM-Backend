@@ -56,12 +56,24 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize WebSocket server (will be created after MongoDB connects)
+let wsServer: TimeTrackingWebSocketServer | null = null;
+
 // Connect to MongoDB and seed RBAC after connection
 (async () => {
   try {
     await connectDB();
     // Seed RBAC after DB connection is established
     await seedPermissionsAndRoles();
+    
+    // Initialize WebSocket server after MongoDB is ready
+    if (!wsServer) {
+      wsServer = new TimeTrackingWebSocketServer(httpServer);
+      logger.info(`🔌 WebSocket server initialized and available at ws://localhost:${PORT}/ws/time-tracking`);
+    }
   } catch (err) {
     logger.error('Failed to connect to DB or seed RBAC:', err);
     // Don't exit, continue running the server
@@ -164,14 +176,9 @@ app.use((req: Request, res: Response) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Create HTTP server and attach WebSocket
-const httpServer = createServer(app);
-const wsServer = new TimeTrackingWebSocketServer(httpServer);
-
 // Start server - bind to 0.0.0.0 to accept connections from all network interfaces
 httpServer.listen(Number(PORT), '0.0.0.0', () => {
   logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  logger.info(`🔌 WebSocket server available at ws://localhost:${PORT}/ws/time-tracking`);
 });
 
 // Handle unhandled promise rejections
