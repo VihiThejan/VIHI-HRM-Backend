@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VIHI Tracker Protocol Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .info {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .code {
+            background-color: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #4CAF50;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>VIHI Time Tracker - Protocol Test</h1>
+    
+    <div class="info">
+        <strong>What this test does:</strong>
+        <p>This page will try to launch the VIHI Time Tracker desktop app using the custom protocol handler (vihi-tracker://)</p>
+        <p>When you click the button below, your browser will ask you to confirm opening the application.</p>
+    </div>
+
+    <div class="step">
+        <h3>Step 1: Click the button below</h3>
+        <button class="button" onclick="launchTracker()">🚀 Launch Time Tracker (Test Mode)</button>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: What should happen</h3>
+        <ol>
+            <li>Browser shows a dialog: "Open debug_wrapper_new.bat?" or similar</li>
+            <li>Click "Open debug_wrapper_new.bat" or "Always allow"</li>
+            <li>A black command window (debug wrapper) should appear showing the arguments</li>
+            <li>The Time Tracker desktop app window should appear</li>
+            <li>It will show "Connection error" because we're using a fake token - that's OK!</li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: If nothing happens</h3>
+        <p><strong>Browser might be blocking the protocol handler.</strong></p>
+        <p>Solutions:</p>
+        <ul>
+            <li><strong>Chrome:</strong> Go to chrome://settings/content/protocolHandlers and check if vihi-tracker is allowed</li>
+            <li><strong>Edge:</strong> Go to edge://settings/content/protocolHandlers and check if vihi-tracker is allowed</li>
+            <li>Try clicking the button again - sometimes the first attempt is blocked</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h3>The Protocol URL Being Used:</h3>
+        <div id="url-display" class="code">vihi-tracker://start?token=TEST_TOKEN&name=Test%20User&ws_url=ws%3A%2F%2Flocalhost%3A5000&api_url=http%3A%2F%2Flocalhost%3A5000%2Fapi</div>
+    </div>
+
+    <div class="step">
+        <h3>Registry Key Check:</h3>
+        <p>Run this in PowerShell to verify the protocol handler is registered:</p>
+        <div class="code">Get-ItemProperty -Path "HKCU:\Software\Classes\vihi-tracker\shell\open\command" -Name "(default)"</div>
+        <p>Should output: <code>D:\Projects\HRM\VIHI-HRM-Backend\desktop-tracker\debug_wrapper_new.bat "%1"</code></p>
+    </div>
+
+    <script>
+        function launchTracker() {
+            const testUrl = 'vihi-tracker://start?token=TEST_TOKEN&name=Test%20User&ws_url=ws%3A%2F%2Flocalhost%3A5000&api_url=http%3A%2F%2Flocalhost%3A5000%2Fapi';
+            
+            console.log('Launching time tracker with URL:', testUrl);
+            
+            // Try to launch
+            window.location.href = testUrl;
+            
+            // Show alert after a delay
+            setTimeout(() => {
+                alert('Did the debug wrapper window appear?\n\n' +
+                      'If YES: Protocol handler is working! ✅\n\n' +
+                      'If NO: Check the browser dialog - you might need to click "Open" or "Always allow".\n\n' +
+                      'If still NO: Check browser protocol handler settings (see Step 3 above)');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
