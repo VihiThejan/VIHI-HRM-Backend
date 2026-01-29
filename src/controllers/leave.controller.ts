@@ -8,18 +8,41 @@ import { AuthRequest } from '../middleware/auth.middleware';
 // @access  Private
 export const getLeaves = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    // Log raw query to see what's actually being received
+    console.log('DEBUG getLeaves RAW QUERY:', req.query);
+
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const status = req.query.status as string;
     const type = req.query.type as string;
+    const myLeavesOnly = req.query.myLeavesOnly === 'true';
 
     const query: any = {};
+    const mongoose = require('mongoose');
 
-    // Regular employees/interns can only see their own leaves
-    if (req.user.role === 'employee' || req.user.role === 'intern') {
-      // Always cast to ObjectId for correct matching
-      const mongoose = require('mongoose');
-      query.employeeId = new mongoose.Types.ObjectId(req.user.id);
+    // Check if user has permission to view all leaves (managers, admins, CEOs)
+    const canViewAllLeaves = req.user.permissions?.includes('approve_leaves') ||
+      req.user.permissions?.includes('manage_leaves') ||
+      ['admin', 'ceo', 'manager'].includes(req.user.role);
+
+    // Debug logging - REMOVE AFTER FIXING
+    console.log('DEBUG getLeaves:', {
+      userId: req.user.id,
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      userPermissions: req.user.permissions,
+      myLeavesOnly,
+      canViewAllLeaves,
+      willFilterByEmployeeId: myLeavesOnly || !canViewAllLeaves
+    });
+
+    // If myLeavesOnly is true, filter to only user's own leaves (for "My Leaves" tab)
+    // Otherwise, regular employees/interns can only see their own leaves anyway
+    if (myLeavesOnly || !canViewAllLeaves) {
+      // Convert to string first to handle cases where req.user.id is already an ObjectId
+      const userIdStr = req.user.id.toString();
+      query.employeeId = new mongoose.Types.ObjectId(userIdStr);
+      console.log('DEBUG: Setting employeeId filter to:', userIdStr);
     }
 
     if (status) {
@@ -69,10 +92,15 @@ export const getLeave = async (req: AuthRequest, res: Response, next: NextFuncti
       });
     }
 
+    // Check if user has permission to view all leaves (managers, admins, CEOs)
+    const canViewAllLeaves = req.user.permissions?.includes('approve_leaves') ||
+      req.user.permissions?.includes('manage_leaves') ||
+      ['admin', 'ceo', 'manager'].includes(req.user.role);
+
     // Check if user has access to this leave
     if (
-      req.user.role === 'employee' &&
-      leave.employeeId._id.toString() !== req.user.id
+      !canViewAllLeaves &&
+      leave.employeeId._id.toString() !== req.user.id.toString()
     ) {
       return res.status(403).json({
         status: 'error',
@@ -310,10 +338,15 @@ export const getLeaveBalance = async (req: AuthRequest, res: Response, next: Nex
   try {
     const employeeId = req.query.employeeId || req.user.id;
 
+    // Check if user has permission to view others' balances
+    const canViewOthersBalance = req.user.permissions?.includes('approve_leaves') ||
+      req.user.permissions?.includes('manage_leaves') ||
+      ['admin', 'ceo', 'manager'].includes(req.user.role);
+
     // Check authorization
     if (
-      req.user.role === 'employee' &&
-      employeeId !== req.user.id
+      !canViewOthersBalance &&
+      employeeId.toString() !== req.user.id.toString()
     ) {
       return res.status(403).json({
         status: 'error',
@@ -343,7 +376,7 @@ export const getLeaveBalance = async (req: AuthRequest, res: Response, next: Nex
       const days = Math.ceil(
         (leave.endDate.getTime() - leave.startDate.getTime()) / (1000 * 60 * 60 * 24)
       ) + 1;
-      
+
       if (balance[leave.type]) {
         balance[leave.type].used += days;
       }
