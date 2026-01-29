@@ -15,9 +15,11 @@ export const getLeaves = async (req: AuthRequest, res: Response, next: NextFunct
 
     const query: any = {};
 
-    // Regular employees can only see their own leaves
+    // Regular employees/interns can only see their own leaves
     if (req.user.role === 'employee' || req.user.role === 'intern') {
-      query.employeeId = req.user.id;
+      // Always cast to ObjectId for correct matching
+      const mongoose = require('mongoose');
+      query.employeeId = new mongoose.Types.ObjectId(req.user.id);
     }
 
     if (status) {
