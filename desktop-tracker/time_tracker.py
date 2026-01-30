@@ -47,8 +47,8 @@ except ImportError:
     print("Warning: pynput not available. Mouse tracking disabled.")
 
 # Default Configuration
-DEFAULT_WS_URL = "ws://localhost:5000"
-DEFAULT_API_URL = "http://localhost:5000/api"
+DEFAULT_WS_URL = "wss://vihi-hrm-backend.vercel.app"
+DEFAULT_API_URL = "https://vihi-hrm-backend.vercel.app/api"
 HEARTBEAT_INTERVAL = 30  # seconds
 IDLE_TIMEOUT = 300  # 5 minutes without mouse movement = idle
 
@@ -131,174 +131,150 @@ class MouseTracker:
         return is_idle, activity_percent, movements
 
 
-class WebSocketClient(QThread):
-    """WebSocket client for real-time communication with backend"""
+class RESTAPIClient(QThread):
+    """REST API client for communication with backend (Vercel compatible)"""
     
-    def __init__(self, ws_url: str, token: str, signals: WorkerSignals):
+    def __init__(self, api_url: str, token: str, signals: WorkerSignals):
         super().__init__()
-        self.ws_url = ws_url
+        self.api_url = api_url.rstrip('/')
         self.token = token
         self.signals = signals
-        self.ws = None
         self.running = False
         self.session_id = None
         self.connected = False
+        self.headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
     
     def run(self):
+        """Start session via REST API"""
         self.running = True
-        self._connect()
+        self._start_session()
     
-    def _connect(self):
-        """Establish WebSocket connection"""
+    def _start_session(self):
+        """Start a new tracking session"""
         try:
-            ws_url_with_token = f"{self.ws_url}/ws/time-tracking?token={self.token}"
+            print(f"[DEBUG] Starting session via REST API: {self.api_url}/time-tracking/start")
+            log_to_file(f"[_start_session] Calling {self.api_url}/time-tracking/start")
             
-            self.ws = websocket.WebSocketApp(
-                ws_url_with_token,
-                on_open=self._on_open,
-                on_message=self._on_message,
-                on_error=self._on_error,
-                on_close=self._on_close
+            response = requests.post(
+                f"{self.api_url}/time-tracking/start",
+                headers=self.headers,
+                json={
+                    "timestamp": datetime.now().isoformat(),
+                    "deviceInfo": json.dumps({
+                        "platform": sys.platform,
+                        "version": "1.0.0"
+                    })
+                },
+                timeout=30
             )
             
-            self.ws.run_forever(ping_interval=30, ping_timeout=10)
+            print(f"[DEBUG] Response status: {response.status_code}")
+            log_to_file(f"[_start_session] Response: {response.status_code}")
             
+            if response.status_code == 200 or response.status_code == 201:
+                data = response.json()
+                if data.get("status") == "success":
+                    self.session_id = data.get("data", {}).get("sessionId")
+                    self.connected = True
+                    print(f"[DEBUG] Session started! ID: {self.session_id}")
+                    log_to_file(f"[_start_session] Session ID: {self.session_id}")
+                    self.signals.connection_status.emit(True)
+                    self.signals.session_started.emit(self.session_id or "")
+                    self.signals.update_status.emit("Connected - Tracking active")
+                else:
+                    raise Exception(data.get("message", "Failed to start session"))
+            else:
+                error_msg = f"Server returned {response.status_code}"
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("message", error_msg)
+                except:
+                    pass
+                raise Exception(error_msg)
+                
+        except requests.exceptions.Timeout:
+            self.signals.error.emit("Connection timeout - server not responding")
+            self.signals.connection_status.emit(False)
+        except requests.exceptions.ConnectionError:
+            self.signals.error.emit("Cannot connect to server")
+            self.signals.connection_status.emit(False)
         except Exception as e:
-            self.signals.error.emit(f"WebSocket connection failed: {str(e)}")
+            print(f"[DEBUG] Start session failed: {str(e)}")
+            log_to_file(f"[_start_session] ERROR: {e}")
+            self.signals.error.emit(f"Failed to start session: {str(e)}")
             self.signals.connection_status.emit(False)
     
-    def _on_open(self, ws):
-        """Handle WebSocket connection opened"""
-        print("[DEBUG] WebSocket connected!")
-        log_to_file("[_on_open] WebSocket connected!")
-        self.connected = True
-        self.signals.connection_status.emit(True)
-        self.signals.update_status.emit("Connected to server")
-        
-        # Send start session message
-        # Delay to ensure WebSocket connection is fully established
-        time.sleep(0.5)
-        print("[DEBUG] Sending start_session message...")
-        log_to_file("[_on_open] About to send start_session message (after 500ms delay)")
-        self.send_message({
-            "type": "start_session",
-            "timestamp": datetime.now().isoformat(),
-            "deviceInfo": json.dumps({
-                "platform": sys.platform,
-                "version": "1.0.0"
-            })
-        })
-        print("[DEBUG] start_session message sent")
-        log_to_file("[_on_open] start_session send_message call completed")
-    
-    def _on_message(self, ws, message):
-        """Handle incoming WebSocket messages"""
-        try:
-            print(f"[DEBUG] Received message: {message}")
-            log_to_file(f"[_on_message] Received: {message[:200]}...")
-            data = json.loads(message)
-            msg_type = data.get("type")
-            
-            if msg_type == "session_started":
-                self.session_id = data.get("sessionId")
-                print(f"[DEBUG] Session started! ID: {self.session_id}")
-                self.signals.session_started.emit(self.session_id)
-                self.signals.update_status.emit("Session started")
-            
-            elif msg_type == "session_ended":
-                print("[DEBUG] Session ended by server")
-                self.signals.session_ended.emit()
-                self.signals.update_status.emit("Session ended")
-            
-            elif msg_type == "heartbeat_ack":
-                # Server acknowledged heartbeat
-                total_seconds = data.get("totalActiveSeconds", 0)
-                print(f"[DEBUG] Heartbeat ack received. Total: {total_seconds}s")
-                self.signals.update_time.emit(total_seconds)
-            
-            elif msg_type == "error":
-                print(f"[DEBUG] Error from server: {data.get('message')}")
-                self.signals.error.emit(data.get("message", "Unknown error"))
-            
-            elif msg_type == "sync":
-                # Sync current session state
-                self.signals.update_time.emit(data.get("totalActiveSeconds", 0))
-                self.signals.update_activity.emit(data.get("averageActivity", 0))
-                
-        except json.JSONDecodeError:
-            print("[DEBUG] Invalid JSON from server")
-            self.signals.error.emit("Invalid message from server")
-    
-    def _on_error(self, ws, error):
-        """Handle WebSocket errors"""
-        print(f"[DEBUG] WebSocket error: {str(error)}")
-        log_to_file(f"[_on_error] {error}")
-        self.signals.error.emit(f"Connection error: {str(error)}")
-        self.signals.connection_status.emit(False)
-    
-    def _on_close(self, ws, close_status_code, close_msg):
-        """Handle WebSocket connection closed"""
-        print(f"[DEBUG] WebSocket closed: code={close_status_code}, msg={close_msg}")
-        log_to_file(f"[_on_close] Code: {close_status_code}, Message: {close_msg}")
-        self.connected = False
-        self.signals.connection_status.emit(False)
-        
-        if self.running:
-            self.signals.update_status.emit("Disconnected. Reconnecting...")
-            time.sleep(5)
-            if self.running:
-                self._connect()
-    
-    def send_message(self, data: dict):
-        """Send message to server"""
-        print(f"[DEBUG] send_message called. ws={self.ws is not None}, connected={self.connected}")
-        log_to_file(f"[send_message] Called. ws exists: {self.ws is not None}, connected: {self.connected}")
-        
-        if self.ws and self.connected:
-            try:
-                msg = json.dumps(data)
-                print(f"[DEBUG] Sending: {msg}")
-                log_to_file(f"[send_message] Attempting to send: {msg[:100]}...")
-                self.ws.send(msg)
-                print(f"[DEBUG] Message sent successfully")
-                log_to_file(f"[send_message] ws.send() completed successfully")
-            except Exception as e:
-                print(f"[DEBUG] Failed to send message: {str(e)}")
-                log_to_file(f"[send_message] ERROR: {e}")
-                self.signals.error.emit(f"Failed to send message: {str(e)}")
-        else:
-            print(f"[DEBUG] Cannot send message - not connected")
-            log_to_file(f"[send_message] SKIPPED - not connected or no ws")
-
-    
     def send_heartbeat(self, active_seconds: int, activity_percent: int, is_idle: bool, movements: int):
-        """Send heartbeat with activity data"""
-        print(f"[DEBUG] Sending heartbeat: {active_seconds}s, activity:{activity_percent}%, idle:{is_idle}")
-        self.send_message({
-            "type": "heartbeat",
-            "sessionId": self.session_id,
-            "timestamp": datetime.now().isoformat(),
-            "activeSeconds": active_seconds,
-            "activityPercent": activity_percent,
-            "isIdle": is_idle,
-            "mouseMovements": movements
-        })
+        """Send heartbeat with activity data via REST API"""
+        if not self.session_id or not self.running:
+            return
+            
+        try:
+            print(f"[DEBUG] Sending heartbeat: {active_seconds}s, activity:{activity_percent}%, idle:{is_idle}")
+            
+            response = requests.post(
+                f"{self.api_url}/time-tracking/heartbeat",
+                headers=self.headers,
+                json={
+                    "sessionId": self.session_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "activeSeconds": active_seconds,
+                    "activityPercent": activity_percent,
+                    "isIdle": is_idle,
+                    "mouseMovements": movements
+                },
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                total_seconds = data.get("data", {}).get("totalActiveSeconds", 0)
+                self.signals.update_time.emit(total_seconds)
+                print(f"[DEBUG] Heartbeat ack. Total: {total_seconds}s")
+            else:
+                print(f"[DEBUG] Heartbeat failed: {response.status_code}")
+                
+        except Exception as e:
+            print(f"[DEBUG] Heartbeat error: {str(e)}")
+            log_to_file(f"[send_heartbeat] ERROR: {e}")
     
     def end_session(self):
         """End the current session"""
-        self.send_message({
-            "type": "end_session",
-            "sessionId": self.session_id,
-            "timestamp": datetime.now().isoformat()
-        })
+        if not self.session_id:
+            return
+            
+        try:
+            print(f"[DEBUG] Ending session: {self.session_id}")
+            
+            response = requests.post(
+                f"{self.api_url}/time-tracking/end",
+                headers=self.headers,
+                json={
+                    "sessionId": self.session_id,
+                    "timestamp": datetime.now().isoformat()
+                },
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                print("[DEBUG] Session ended successfully")
+                self.signals.session_ended.emit()
+            else:
+                print(f"[DEBUG] End session failed: {response.status_code}")
+                
+        except Exception as e:
+            print(f"[DEBUG] End session error: {str(e)}")
+            log_to_file(f"[end_session] ERROR: {e}")
     
     def stop(self):
-        """Stop the WebSocket client"""
+        """Stop the REST API client"""
         self.running = False
         if self.session_id:
             self.end_session()
-        if self.ws:
-            self.ws.close()
+        self.connected = False
 
 
 class TimeTracker:
@@ -373,7 +349,7 @@ class MainWindow(QMainWindow):
         
         self.signals = WorkerSignals()
         self.time_tracker = TimeTracker(self.signals)
-        self.ws_client = None
+        self.api_client = None
         self.is_connected = False
         self.session_active = False
         
@@ -585,9 +561,9 @@ class MainWindow(QMainWindow):
     
     def start_tracking(self):
         """Start tracking session"""
-        # Start WebSocket connection
-        self.ws_client = WebSocketClient(self.ws_url, self.token, self.signals)
-        self.ws_client.start()
+        # Start REST API connection (Vercel compatible)
+        self.api_client = RESTAPIClient(self.api_url, self.token, self.signals)
+        self.api_client.start()
         
         # Start time tracker
         self.time_tracker.start()
@@ -609,8 +585,8 @@ class MainWindow(QMainWindow):
             self.session_active = False
             self.time_tracker.stop()
             
-            if self.ws_client:
-                self.ws_client.stop()
+            if self.api_client:
+                self.api_client.stop()
             
             self.status_label.setText("Session ended")
             self.stop_btn.setEnabled(False)
@@ -626,8 +602,8 @@ class MainWindow(QMainWindow):
         heartbeat_data = self.time_tracker.tick()
         
         # Send heartbeat if needed
-        if heartbeat_data and self.ws_client and self.ws_client.connected:
-            self.ws_client.send_heartbeat(
+        if heartbeat_data and self.api_client and self.api_client.connected:
+            self.api_client.send_heartbeat(
                 heartbeat_data["active_seconds"],
                 heartbeat_data["activity_percent"],
                 heartbeat_data["is_idle"],
@@ -697,9 +673,9 @@ class MainWindow(QMainWindow):
         self.session_active = False
         self.time_tracker.stop()
         
-        if self.ws_client:
-            self.ws_client.stop()
-            self.ws_client.wait(2000)
+        if self.api_client:
+            self.api_client.stop()
+            self.api_client.wait(2000)
         
         self.tray_icon.hide()
         QApplication.quit()
