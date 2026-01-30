@@ -42,9 +42,16 @@ from PyQt5.QtGui import QIcon, QFont, QPalette, QColor, QPixmap
 try:
     from pynput import mouse
     PYNPUT_AVAILABLE = True
-except ImportError:
+    print("[DEBUG] pynput imported successfully - mouse tracking enabled")
+    log_to_file("[pynput] Successfully imported pynput.mouse")
+except ImportError as e:
     PYNPUT_AVAILABLE = False
-    print("Warning: pynput not available. Mouse tracking disabled.")
+    print(f"[DEBUG] pynput import failed: {e} - Mouse tracking disabled")
+    log_to_file(f"[pynput] Import failed: {e}")
+except Exception as e:
+    PYNPUT_AVAILABLE = False
+    print(f"[DEBUG] pynput error: {e} - Mouse tracking disabled")
+    log_to_file(f"[pynput] Error: {e}")
 
 # Default Configuration
 DEFAULT_WS_URL = "wss://vihi-hrm-backend.vercel.app"
@@ -64,8 +71,13 @@ class WorkerSignals(QObject):
     error = pyqtSignal(str)
 
 
+import ctypes
+
+class Point(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
 class MouseTracker:
-    """Tracks mouse movements and determines activity status"""
+    """Tracks mouse movements using Windows API (ctypes) - No external dependencies"""
     
     def __init__(self):
         self.last_position = (0, 0)
@@ -73,44 +85,41 @@ class MouseTracker:
         self.movement_count = 0
         self.is_active = False
         self.movement_history = deque(maxlen=60)
-        self.listener = None
         self.running = False
+        self._get_cursor_pos = ctypes.windll.user32.GetCursorPos
     
     def start(self):
-        if not PYNPUT_AVAILABLE:
-            return
+        print("[DEBUG] MouseTracker (ctypes) started")
+        log_to_file("[MouseTracker] Started using ctypes (Windows API)")
         self.running = True
-        self.listener = mouse.Listener(
-            on_move=self._on_move,
-            on_click=self._on_click
-        )
-        self.listener.start()
+        # Initialize current position
+        pt = Point()
+        if self._get_cursor_pos(ctypes.byref(pt)):
+            self.last_position = (pt.x, pt.y)
     
     def stop(self):
         self.running = False
-        if self.listener:
-            self.listener.stop()
+        print("[DEBUG] MouseTracker stopped")
     
-    def _on_move(self, x, y):
+    def check_for_movement(self):
+        """Manually check for movement (polling)"""
         if not self.running:
             return
-        current_pos = (x, y)
-        if current_pos != self.last_position:
-            self.last_position = current_pos
-            self.last_movement_time = time.time()
-            self.movement_count += 1
-            self.is_active = True
-    
-    def _on_click(self, x, y, button, pressed):
-        if not self.running:
-            return
-        if pressed:
-            self.last_movement_time = time.time()
-            self.movement_count += 1
-            self.is_active = True
-    
+            
+        pt = Point()
+        if self._get_cursor_pos(ctypes.byref(pt)):
+            current_pos = (pt.x, pt.y)
+            if current_pos != self.last_position:
+                self.last_position = current_pos
+                self.last_movement_time = time.time()
+                self.movement_count += 1
+                self.is_active = True
+                
     def check_activity(self):
         """Returns (is_idle, activity_percent, movements)"""
+        # Poll for movement right before checking
+        self.check_for_movement()
+        
         current_time = time.time()
         time_since_movement = current_time - self.last_movement_time
         
@@ -305,6 +314,9 @@ class TimeTracker:
         if not self.is_tracking:
             return None
         
+        # Poll for movement manually since we use polling now
+        self.mouse_tracker.check_for_movement()
+        
         is_idle, activity_percent, movements = self.mouse_tracker.check_activity()
         
         # Only count time if not idle
@@ -419,12 +431,12 @@ class MainWindow(QMainWindow):
         header_layout = QVBoxLayout(header)
         
         title_label = QLabel("VIHI Time Tracker")
-        title_label.setFont(QFont("Segoe UI", 18, QFont.Bold))
+        title_label.setFont(QFont("Arial", 18, QFont.Bold))
         title_label.setAlignment(Qt.AlignCenter)
         header_layout.addWidget(title_label)
         
         self.user_label = QLabel(f"Welcome, {self.user_name}")
-        self.user_label.setFont(QFont("Segoe UI", 11))
+        self.user_label.setFont(QFont("Arial", 11))
         self.user_label.setAlignment(Qt.AlignCenter)
         header_layout.addWidget(self.user_label)
         
@@ -441,7 +453,11 @@ class MainWindow(QMainWindow):
         time_layout = QVBoxLayout(time_group)
         
         self.time_label = QLabel("00:00:00")
-        self.time_label.setFont(QFont("Segoe UI", 48, QFont.Bold))
+        # Use default font, just set size
+        font = QFont()
+        font.setPointSize(48)
+        font.setBold(True)
+        self.time_label.setFont(font)
         self.time_label.setAlignment(Qt.AlignCenter)
         self.time_label.setStyleSheet("color: #6366f1;")
         time_layout.addWidget(self.time_label)
