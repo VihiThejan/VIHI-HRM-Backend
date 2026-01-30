@@ -44,44 +44,54 @@ def main():
         if os.path.exists(folder):
             shutil.rmtree(folder)
     
-    # Build the executable
+    # Build the executable using spec file
     print("\nBuilding executable...")
     
-    pyinstaller_args = [
-        sys.executable, "-m", "PyInstaller",
-        "--onefile",
-        "--windowed",
-        "--name", "VIHI-TimeTracker",
-        "--add-data", "README.md;.",
-        # Hidden imports that PyInstaller might miss
-        "--hidden-import", "websocket",
-        "--hidden-import", "websocket._abnf",
-        "--hidden-import", "websocket._core",
-        "--hidden-import", "websocket._exceptions",
-        "--hidden-import", "websocket._handshake",
-        "--hidden-import", "websocket._http",
-        "--hidden-import", "websocket._logging",
-        "--hidden-import", "websocket._socket",
-        "--hidden-import", "websocket._ssl_compat",
-        "--hidden-import", "websocket._url",
-        "--hidden-import", "websocket._utils",
-        "--hidden-import", "pynput",
-        "--hidden-import", "pynput.mouse",
-        "--hidden-import", "pynput.mouse._win32",
-        "--hidden-import", "pynput.keyboard",
-        "--hidden-import", "pynput.keyboard._win32",
-        "--collect-all", "websocket",
-        "--collect-all", "pynput",
-    ]
-    
-    # Add icon if it exists
-    if os.path.exists("app_icon.ico"):
-        pyinstaller_args.extend(["--icon", "app_icon.ico"])
-        print("✓ Using custom icon: app_icon.ico")
+    # Check if spec file exists
+    spec_file = "VIHI-TimeTracker.spec"
+    if os.path.exists(spec_file):
+        print(f"✓ Using spec file: {spec_file}")
+        pyinstaller_args = [
+            sys.executable, "-m", "PyInstaller",
+            "--clean",
+            spec_file
+        ]
     else:
-        print("⚠ No app_icon.ico found, using default icon")
-    
-    pyinstaller_args.append("time_tracker.py")
+        print("⚠ Spec file not found, using command line arguments")
+        pyinstaller_args = [
+            sys.executable, "-m", "PyInstaller",
+            "--onefile",
+            "--windowed",
+            "--name", "VIHI-TimeTracker",
+            "--add-data", "README.md;.",
+            "--hidden-import", "websocket",
+            "--hidden-import", "websocket._abnf",
+            "--hidden-import", "websocket._core",
+            "--hidden-import", "websocket._exceptions",
+            "--hidden-import", "websocket._handshake",
+            "--hidden-import", "websocket._http",
+            "--hidden-import", "websocket._logging",
+            "--hidden-import", "websocket._socket",
+            "--hidden-import", "websocket._ssl_compat",
+            "--hidden-import", "websocket._url",
+            "--hidden-import", "websocket._utils",
+            "--hidden-import", "pynput",
+            "--hidden-import", "pynput.mouse",
+            "--hidden-import", "pynput.mouse._win32",
+            "--hidden-import", "pynput.keyboard",
+            "--hidden-import", "pynput.keyboard._win32",
+            "--collect-all", "websocket",
+            "--collect-all", "pynput",
+        ]
+        
+        # Add icon if it exists
+        if os.path.exists("app_icon.ico"):
+            pyinstaller_args.extend(["--icon", "app_icon.ico"])
+            print("✓ Using custom icon: app_icon.ico")
+        else:
+            print("⚠ No app_icon.ico found, using default icon")
+        
+        pyinstaller_args.append("time_tracker.py")
     
     result = subprocess.run(pyinstaller_args)
     

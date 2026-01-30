@@ -1,21 +1,39 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
+# VIHI Time Tracker PyInstaller Spec File
 
-datas = [('README.md', '.')]
-binaries = []
-hiddenimports = ['websocket', 'websocket._abnf', 'websocket._core', 'websocket._exceptions', 'websocket._handshake', 'websocket._http', 'websocket._logging', 'websocket._socket', 'websocket._ssl_compat', 'websocket._url', 'websocket._utils', 'pynput', 'pynput.mouse', 'pynput.mouse._win32', 'pynput.keyboard', 'pynput.keyboard._win32']
-tmp_ret = collect_all('websocket')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('pynput')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+import sys
+from PyInstaller.utils.hooks import collect_all, collect_submodules
 
+# Collect all websocket-client submodules
+websocket_datas, websocket_binaries, websocket_hiddenimports = collect_all('websocket')
+pynput_datas, pynput_binaries, pynput_hiddenimports = collect_all('pynput')
 
 a = Analysis(
     ['time_tracker.py'],
     pathex=[],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=hiddenimports,
+    binaries=websocket_binaries + pynput_binaries,
+    datas=[('README.md', '.')] + websocket_datas + pynput_datas,
+    hiddenimports=[
+        'websocket',
+        'websocket._abnf',
+        'websocket._app',
+        'websocket._core',
+        'websocket._exceptions',
+        'websocket._handshake',
+        'websocket._http',
+        'websocket._logging',
+        'websocket._socket',
+        'websocket._ssl_compat',
+        'websocket._url',
+        'websocket._utils',
+        'pynput',
+        'pynput.mouse',
+        'pynput.mouse._win32',
+        'pynput.keyboard',
+        'pynput.keyboard._win32',
+        'pynput._util',
+        'pynput._util.win32',
+    ] + websocket_hiddenimports + pynput_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -23,7 +41,8 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(a.pure)
+
+pyz = PYZ(a.pure, a.zipped_data)
 
 exe = EXE(
     pyz,
@@ -38,7 +57,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=False,  # windowed mode
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
