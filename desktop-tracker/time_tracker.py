@@ -16,6 +16,12 @@ from datetime import datetime, timedelta
 from collections import deque
 from urllib.parse import urlencode
 
+# Fix for PyQt5 font rendering "blocks" issue
+# Force software rendering helps with driver glitches or HighDPI scaling artifacts
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0" 
+# os.environ["QT_OPENGL"] = "software" # Try software if ANGLE fails
+
 # Setup file logging
 LOG_FILE = r'D:\Projects\HRM\VIHI-HRM-Backend\desktop-tracker\debug_log.txt'
 def log_to_file(message):
