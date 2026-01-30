@@ -29,6 +29,7 @@ import permissionRoutes from './routes/permission.routes';
 import roleRoutes from './routes/role.routes';
 import userRoutes from './routes/user.routes';
 import googleDriveRoutes from './routes/googleDrive.routes';
+import downloadsRoutes from './routes/downloads.routes';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
@@ -68,7 +69,7 @@ let wsServer: TimeTrackingWebSocketServer | null = null;
     await connectDB();
     // Seed RBAC after DB connection is established
     await seedPermissionsAndRoles();
-    
+
     // Initialize WebSocket server after MongoDB is ready
     if (!wsServer) {
       wsServer = new TimeTrackingWebSocketServer(httpServer);
@@ -164,6 +165,9 @@ app.use('/api/time-tracking', timeTrackingRoutes);
 app.use('/api/admin/permissions', permissionRoutes);
 app.use('/api/admin/roles', roleRoutes);
 app.use('/api/admin/users', userRoutes);
+
+// Downloads routes
+app.use('/api/downloads', downloadsRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
