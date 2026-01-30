@@ -53,6 +53,25 @@ def main():
         "--windowed",
         "--name", "VIHI-TimeTracker",
         "--add-data", "README.md;.",
+        # Hidden imports that PyInstaller might miss
+        "--hidden-import", "websocket",
+        "--hidden-import", "websocket._abnf",
+        "--hidden-import", "websocket._core",
+        "--hidden-import", "websocket._exceptions",
+        "--hidden-import", "websocket._handshake",
+        "--hidden-import", "websocket._http",
+        "--hidden-import", "websocket._logging",
+        "--hidden-import", "websocket._socket",
+        "--hidden-import", "websocket._ssl_compat",
+        "--hidden-import", "websocket._url",
+        "--hidden-import", "websocket._utils",
+        "--hidden-import", "pynput",
+        "--hidden-import", "pynput.mouse",
+        "--hidden-import", "pynput.mouse._win32",
+        "--hidden-import", "pynput.keyboard",
+        "--hidden-import", "pynput.keyboard._win32",
+        "--collect-all", "websocket",
+        "--collect-all", "pynput",
     ]
     
     # Add icon if it exists
