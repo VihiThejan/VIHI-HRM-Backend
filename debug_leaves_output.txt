@@ -1,0 +1,120 @@
+Connected to MongoDB
+
+=== ALL LEAVES IN DATABASE ===
+Total leaves: 5
+
+Leave 1:
+  ID: 697b173080bc0669c0e0fc50
+  Employee ID: {"_id":"696687d5d5e1af785daefc47","name":"Hiruni Ekanayake","email":"hiru@gmail.com","role":"intern"}
+  Type: sick
+  Status: pending
+  Start: Thu Jan 29 2026 05:30:00 GMT+0530 (India Standard Time)
+  End: Sat Jan 31 2026 05:30:00 GMT+0530 (India Standard Time)
+
+Leave 2:
+  ID: 697b28a380bc0669c0e0fdbd
+  Employee ID: {"_id":"696687d5d5e1af785daefc47","name":"Hiruni Ekanayake","email":"hiru@gmail.com","role":"intern"}
+  Type: sick
+  Status: pending
+  Start: Sun Feb 01 2026 05:30:00 GMT+0530 (India Standard Time)
+  End: Sun Feb 01 2026 05:30:00 GMT+0530 (India Standard Time)
+
+Leave 3:
+  ID: 697b2b6a80bc0669c0e0fdef
+  Employee ID: {"_id":"696687d5d5e1af785daefc47","name":"Hiruni Ekanayake","email":"hiru@gmail.com","role":"intern"}
+  Type: casual
+  Status: pending
+  Start: Tue Feb 03 2026 05:30:00 GMT+0530 (India Standard Time)
+  End: Thu Feb 05 2026 05:30:00 GMT+0530 (India Standard Time)
+
+Leave 4:
+  ID: 697b6cbad60bd027e428b9a7
+  Employee ID: {"_id":"696687d5d5e1af785daefc47","name":"Hiruni Ekanayake","email":"hiru@gmail.com","role":"intern"}
+  Type: unpaid
+  Status: pending
+  Start: Sun Feb 08 2026 05:30:00 GMT+0530 (India Standard Time)
+  End: Tue Feb 10 2026 05:30:00 GMT+0530 (India Standard Time)
+
+Leave 5:
+  ID: 697b9807ef2b5a1464c2f0ce
+  Employee ID: {"_id":"692ea40ceb094950c07b4ea2","name":"System Admin","email":"admin@vihi.com","role":"admin"}
+  Type: sick
+  Status: pending
+  Start: Fri Jan 30 2026 05:30:00 GMT+0530 (India Standard Time)
+  End: Fri Jan 30 2026 05:30:00 GMT+0530 (India Standard Time)
+
+=== ALL EMPLOYEES ===
+  System Admin (admin@vihi.com) - Role: admin - ID: 692ea40ceb094950c07b4ea2
+  Emily (emily@gmail.com) - Role: intern - ID: 69319e55cee83900e9b2ae1a
+  Vihinsa Thejan Bandara (theju@gmail.com) - Role: employee - ID: 69347e68afe61e8c060c4188
+  Tharu Thathsarani (tharu@gmail.com) - Role: intern - ID: 69348020afe61e8c060c41c0
+  John Steffs (jo@gmail.com) - Role: employee - ID: 69348255afe61e8c060c41d4
+  adse thsf (adr@gmail.com) - Role: employee - ID: 69348493fbadf50fbc643de8
+  shiran silva (shiran@gmail.com) - Role: intern - ID: 6937c9946f2aaaac265d5c77
+  Nadee Hewapathirana (nadee@gmail.com) - Role: intern - ID: 6937cb59f3669db2bb907db5
+  Hansi Sandushma (hansi@gmail.com) - Role: intern - ID: 6937cdc1f3669db2bb907dca
+  Tiran (tiran@gmail.com) - Role: intern - ID: 6937cfeff3669db2bb907de7
+  Teena Ameliya (teena@gmail.com) - Role: intern - ID: 6937d229f3669db2bb907e06
+  K.M.V. Thejan Bandara (vihinsabandara@gmail.com) - Role: intern - ID: 69386f611c45b215d66c7fc6
+  Gayan Tharuka De Silva (gayan@gmail.com) - Role: intern - ID: 693cf19308aa48352e611f5c
+  Sashi Gamage (sashi12@gmail.com) - Role: intern - ID: 693cf3c3dabcf48f0eda452e
+  Shehan Dulmin (shehan@gmail.com) - Role: intern - ID: 693d0c99acedb18539e208f7
+  Prashan Rathnayake (prashan@gmail.com) - Role: employee - ID: 693d257fa4015ab3d1b3dbf0
+  Ashani Perera (ashani@gmail.com) - Role: intern - ID: 693d2759a4015ab3d1b3dbf9
+  Yasas (yasas@gmail.com) - Role: intern - ID: 693da8e78fd47ea8af9b4c55
+  Tishi (tishi@gmail.com) - Role: intern - ID: 693daba275fa6c81c8c68cb6
+  Prabhani Lakshika (prabha@gmail.com) - Role: intern - ID: 6943c240313dba267bee7091
+  John Smith (ceo@vihi.com) - Role: ceo - ID: 69441a061e53bf9c005da533
+  Supun Jayasinghe (supun@gmail.com) - Role: employee - ID: 694bbbb3a59a0cc050a3b1d6
+  Nadee Hewapathirana (nadee12@gmail.com) - Role: intern - ID: 694bbc51a59a0cc050a3b1ea
+  Sasindu Perera (sasi@gmail.com) - Role: employee - ID: 694cfb5018bcbe0903a22ab5
+  Nithya Dissanayake (nithi@gmail.com) - Role: intern - ID: 694cfbe718bcbe0903a22ac9
+  Direct DB Intern (intern1767396917910@vihi.com) - Role: intern - ID: 69585635459a93486ccd1393
+  Hiruni Ekanayake (hiru@gmail.com) - Role: intern - ID: 696687d5d5e1af785daefc47
+  K.M.V. Thejan Bandara (vihinsa@gmail.com) - Role: employee - ID: 6966afe7861d06f9ecc77e28
+  K.M.V. Thejan Bandara (vihin@gmail.com) - Role: employee - ID: 6966b602e67471e87d46ff24
+  K.M.V. Thejan Bandara (vihi@gmail.com) - Role: employee - ID: 6966bbcc1cb0719ed7fbbbe2
+  K.M.V. Thejan Bandara (vih@gmail.com) - Role: employee - ID: 6966c41496d42ce16d4d96d3
+  K.M.V. Thejan Bandara (vi@gmail.com) - Role: employee - ID: 6966c4fd9a305a00d3af11f4
+  K.M.V. Thejan Bandara (v@gmail.com) - Role: employee - ID: 6966c84f0cf68c58841a1d40
+  Bathiya (bathiya@gmail.com) - Role: employee - ID: 696890bb62f799a3f60a6add
+  Nethuli Bandara (nethu@gmail.com) - Role: employee - ID: 6968a80a5daf688f898480cb
+  Tharin Hewage (tharin@gmail.com) - Role: employee - ID: 6968f727cbdf19431ddec42b
+
+=== ALL USERS (RBAC) ===
+  System Admin (admin@vihi.com) - EmployeeId: 692ea40ceb094950c07b4ea2
+  Tharu Thathsarani (tharu@gmail.com) - EmployeeId: 69348020afe61e8c060c41c0
+  shiran silva (shiran@gmail.com) - EmployeeId: 6937c9946f2aaaac265d5c77
+  Nadee Hewapathirana (nadee@gmail.com) - EmployeeId: 6937cb59f3669db2bb907db5
+  Hansi Sandushma (hansi@gmail.com) - EmployeeId: 6937cdc1f3669db2bb907dca
+  Tiran (tiran@gmail.com) - EmployeeId: 6937cfeff3669db2bb907de7
+  Teena Ameliya (teena@gmail.com) - EmployeeId: 6937d229f3669db2bb907e06
+  K.M.V. Thejan Bandara (vihinsabandara@gmail.com) - EmployeeId: 69386f611c45b215d66c7fc6
+  Gayan Tharuka De Silva (gayan@gmail.com) - EmployeeId: 693cf19308aa48352e611f5c
+  Sashi Gamage (sashi12@gmail.com) - EmployeeId: 693cf3c3dabcf48f0eda452e
+  Shehan Dulmin (shehan@gmail.com) - EmployeeId: 693d0c99acedb18539e208f7
+  Ashani Perera (ashani@gmail.com) - EmployeeId: 693d2759a4015ab3d1b3dbf9
+  Yasas (yasas@gmail.com) - EmployeeId: 693da8e78fd47ea8af9b4c55
+  Tishi (tishi@gmail.com) - EmployeeId: 693daba275fa6c81c8c68cb6
+  Sasindu Perera (sasi@gmail.com) - EmployeeId: 694cfb5018bcbe0903a22ab5
+  Test Intern Browser (testintern_browser@example.com) - EmployeeId: NOT LINKED
+  Test Intern Browser UI (testui@example.com) - EmployeeId: NOT LINKED
+  Vihinsa Thejan Bandara (theju@gmail.com) - EmployeeId: 69347e68afe61e8c060c4188
+  John Steffs (jo@gmail.com) - EmployeeId: 69348255afe61e8c060c41d4
+  Prashan Rathnayake (prashan@gmail.com) - EmployeeId: 693d257fa4015ab3d1b3dbf0
+  Prabhani Lakshika (prabha@gmail.com) - EmployeeId: 6943c240313dba267bee7091
+  John Smith (ceo@vihi.com) - EmployeeId: 69441a061e53bf9c005da533
+  Supun Jayasinghe (supun@gmail.com) - EmployeeId: 694bbbb3a59a0cc050a3b1d6
+  Nadee Hewapathirana (nadee12@gmail.com) - EmployeeId: 694bbc51a59a0cc050a3b1ea
+  Nithya Dissanayake (nithi@gmail.com) - EmployeeId: 694cfbe718bcbe0903a22ac9
+  Direct DB Intern (intern1767396917910@vihi.com) - EmployeeId: 69585635459a93486ccd1393
+  Hiruni Ekanayake (hiru@gmail.com) - EmployeeId: 696687d5d5e1af785daefc47
+  K.M.V. Thejan Bandara (vihinsa@gmail.com) - EmployeeId: 6966afe7861d06f9ecc77e28
+  K.M.V. Thejan Bandara (vihin@gmail.com) - EmployeeId: 6966b602e67471e87d46ff24
+  K.M.V. Thejan Bandara (vihi@gmail.com) - EmployeeId: 6966bbcc1cb0719ed7fbbbe2
+  K.M.V. Thejan Bandara (vih@gmail.com) - EmployeeId: 6966c41496d42ce16d4d96d3
+  K.M.V. Thejan Bandara (vi@gmail.com) - EmployeeId: 6966c4fd9a305a00d3af11f4
+  K.M.V. Thejan Bandara (v@gmail.com) - EmployeeId: 6966c84f0cf68c58841a1d40
+  Bathiya (bathiya@gmail.com) - EmployeeId: 696890bb62f799a3f60a6add
+  Nethuli Bandara (nethu@gmail.com) - EmployeeId: 6968a80a5daf688f898480cb
+  Tharin Hewage (tharin@gmail.com) - EmployeeId: 6968f727cbdf19431ddec42b

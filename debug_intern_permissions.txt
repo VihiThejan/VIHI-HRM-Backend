@@ -1,0 +1,225 @@
+Connected to MongoDB
+
+=== ALL INTERNS ===
+
+Intern: Emily (emily@gmail.com)
+  Employee ID: 69319e55cee83900e9b2ae1a
+  Staff ID: IT398457524
+  Employee Role: intern
+  NO RBAC User - using legacy employee role
+
+Intern: Tharu Thathsarani (tharu@gmail.com)
+  Employee ID: 69348020afe61e8c060c41c0
+  Staff ID: IT379655526
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d423f541f14cf3bb6e
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: shiran silva (shiran@gmail.com)
+  Employee ID: 6937c9946f2aaaac265d5c77
+  Staff ID: IT724426874
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d423f541f14cf3bb74
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Nadee Hewapathirana (nadee@gmail.com)
+  Employee ID: 6937cb59f3669db2bb907db5
+  Staff ID: IT187409140
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d423f541f14cf3bb77
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Hansi Sandushma (hansi@gmail.com)
+  Employee ID: 6937cdc1f3669db2bb907dca
+  Staff ID: IT758223081
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d523f541f14cf3bb7a
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Tiran (tiran@gmail.com)
+  Employee ID: 6937cfeff3669db2bb907de7
+  Staff ID: IT292380312
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d523f541f14cf3bb7d
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Teena Ameliya (teena@gmail.com)
+  Employee ID: 6937d229f3669db2bb907e06
+  Staff ID: IT917009077
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d523f541f14cf3bb80
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: K.M.V. Thejan Bandara (vihinsabandara@gmail.com)
+  Employee ID: 69386f611c45b215d66c7fc6
+  Staff ID: IT170719556
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d523f541f14cf3bb83
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Gayan Tharuka De Silva (gayan@gmail.com)
+  Employee ID: 693cf19308aa48352e611f5c
+  Staff ID: VIHI463260024
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d523f541f14cf3bb86
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Sashi Gamage (sashi12@gmail.com)
+  Employee ID: 693cf3c3dabcf48f0eda452e
+  Staff ID: MKT386191757
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d623f541f14cf3bb89
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Shehan Dulmin (shehan@gmail.com)
+  Employee ID: 693d0c99acedb18539e208f7
+  Staff ID: IT917009078
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d623f541f14cf3bb8c
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Ashani Perera (ashani@gmail.com)
+  Employee ID: 693d2759a4015ab3d1b3dbf9
+  Staff ID: IT917009080
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d623f541f14cf3bb8f
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Yasas (yasas@gmail.com)
+  Employee ID: 693da8e78fd47ea8af9b4c55
+  Staff ID: HR393439506
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d623f541f14cf3bb92
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Tishi (tishi@gmail.com)
+  Employee ID: 693daba275fa6c81c8c68cb6
+  Staff ID: IT917009081
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 693dc3d723f541f14cf3bb95
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Prabhani Lakshika (prabha@gmail.com)
+  Employee ID: 6943c240313dba267bee7091
+  Staff ID: IT917009082
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 696895c2b86bf532408fe7b5
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Nadee Hewapathirana (nadee12@gmail.com)
+  Employee ID: 694bbc51a59a0cc050a3b1ea
+  Staff ID: IT917009084
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 696895c3b86bf532408fe7b8
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Nithya Dissanayake (nithi@gmail.com)
+  Employee ID: 694cfbe718bcbe0903a22ac9
+  Staff ID: IT917009086
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 696895c3b86bf532408fe7b9
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Direct DB Intern (intern1767396917910@vihi.com)
+  Employee ID: 69585635459a93486ccd1393
+  Staff ID: INT1767396917910
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 696895c3b86bf532408fe7ba
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false
+
+Intern: Hiruni Ekanayake (hiru@gmail.com)
+  Employee ID: 696687d5d5e1af785daefc47
+  Staff ID: IT917009087
+  Employee Role: intern
+  RBAC User Found!
+    User ID: 696895c4b86bf532408fe7bb
+    Role IDs: ["692fe0395ebe4260e831d3ef"]
+    Roles: Intern
+    Permission Count: 6
+    Has approve_leaves: false
+    Has manage_leaves: false

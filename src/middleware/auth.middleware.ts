@@ -57,8 +57,18 @@ export const protect = async (
         const roles = await Role.find({ _id: { $in: user.roleIds } });
         const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
 
+        // Derive primary role for backwards compatibility with authorize middleware
+        // Priority: admin > ceo > manager > employee > intern
+        const roleNames = roles.map(r => r.name.toLowerCase());
+        let primaryRole = 'employee'; // default
+        if (roleNames.some(r => r.includes('admin'))) primaryRole = 'admin';
+        else if (roleNames.some(r => r.includes('ceo'))) primaryRole = 'ceo';
+        else if (roleNames.some(r => r.includes('manager'))) primaryRole = 'manager';
+        else if (roleNames.some(r => r.includes('intern'))) primaryRole = 'intern';
+
         console.log('DEBUG Auth - RBAC User:', {
           rolesFound: roles.map(r => r.name),
+          derivedRole: primaryRole,
           permissionCount: permissionKeys.length,
           hasManagePermissions: permissionKeys.includes('manage_permissions'),
         });
@@ -67,6 +77,7 @@ export const protect = async (
           id: employee._id,
           name: employee.name,
           email: employee.email,
+          role: primaryRole, // Added for backwards compatibility with authorize middleware
           roleIds: user.roleIds,
           permissions: permissionKeys,
           status: user.status,

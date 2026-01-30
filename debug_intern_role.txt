@@ -1,0 +1,18 @@
+Connected to MongoDB
+
+=== INTERN ROLE ===
+Role ID: 692fe0395ebe4260e831d3ef
+Name: Intern
+Description: Intern with time tracking access
+Permission Keys: [
+  "view_dashboard",
+  "track_own_time",
+  "request_leave",
+  "view_leaves",
+  "create_attendance",
+  "view_attendance"
+]
+
+=== CRITICAL CHECKS ===
+Has approve_leaves: false
+Has manage_leaves: false
