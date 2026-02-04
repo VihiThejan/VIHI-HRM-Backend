@@ -36,6 +36,14 @@ export const generatePayroll = async (req: AuthRequest, res: Response, next: Nex
       });
     }
 
+    // Check if employee has a salary configured
+    if (!employee.salary || employee.salary <= 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Employee does not have a salary configured. Please update the employee salary first.',
+      });
+    }
+
     // Calculate attendance for the month
     const startDate = new Date(year, parseInt(month) - 1, 1);
     const endDate = new Date(year, parseInt(month), 0);
@@ -386,6 +394,64 @@ export const deletePayroll = async (req: AuthRequest, res: Response, next: NextF
       status: 'success',
       message: 'Payroll deleted successfully',
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Generate payslip PDF
+// @route   GET /api/payroll/:id/payslip
+// @access  Private (Admin/CEO or own payslip)
+export const generatePayslip = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const payroll = await Payroll.findById(req.params.id)
+      .populate('employeeId', 'name email department position staffId');
+
+    if (!payroll) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Payroll not found',
+      });
+    }
+
+    // Check authorization - only admin/ceo or the employee themselves can view their payslip
+    const employee = payroll.employeeId as any;
+    if (req.user?.role !== 'admin' && req.user?.role !== 'ceo' && req.user?.id !== employee._id.toString()) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Not authorized to view this payslip',
+      });
+    }
+
+    // Import the payslip service and generate PDF
+    const { generatePayslipPDF } = await import('../services/payslip.service');
+    const pdfBuffer = await generatePayslipPDF(req.params.id);
+
+    // Debug: verify buffer is valid
+    console.log('PDF Buffer generated:', {
+      isBuffer: Buffer.isBuffer(pdfBuffer),
+      length: pdfBuffer?.length,
+      first4Bytes: pdfBuffer?.slice(0, 4).toString()
+    });
+
+    if (!pdfBuffer || !Buffer.isBuffer(pdfBuffer)) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Failed to generate PDF'
+      });
+    }
+
+    // Set response headers for PDF download
+    const monthYear = `${payroll.month}-${payroll.year}`;
+    const filename = `payslip-${employee.staffId || employee._id}-${monthYear}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Cache-Control', 'no-cache');
+
+    // Send the buffer directly
+    res.end(pdfBuffer);
   } catch (error) {
     next(error);
   }
