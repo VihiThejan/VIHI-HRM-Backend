@@ -45,8 +45,10 @@ export const validateAttendance = [
 ];
 
 export const validatePayroll = [
+  body('employeeId').notEmpty().withMessage('Employee ID is required').isMongoId().withMessage('Invalid Employee ID format'),
   body('month').notEmpty().withMessage('Month is required'),
   body('year').isNumeric().withMessage('Year must be a number'),
+  handleValidationErrors,
 ];
 
 export const validatePerformance = [

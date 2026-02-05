@@ -8,6 +8,7 @@ import {
   processPayroll,
   markAsPaid,
   deletePayroll,
+  generatePayslip,
 } from '../controllers/payroll.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 import { validateId, validatePayroll } from '../middleware/validation.middleware';
@@ -31,5 +32,6 @@ router
 
 router.put('/:id/process', validateId, authorize('admin', 'ceo'), processPayroll);
 router.put('/:id/pay', validateId, authorize('admin', 'ceo'), markAsPaid);
+router.get('/:id/payslip', validateId, generatePayslip);
 
 export default router;
