@@ -269,6 +269,11 @@ export const deleteUser = async (req: AuthRequest, res: Response, next: NextFunc
       });
     }
 
+    // Also set the linked Employee's status to inactive
+    if (user.employeeId) {
+      await Employee.findByIdAndUpdate(user.employeeId, { status: 'inactive' });
+    }
+
     await user.deleteOne();
 
     res.status(200).json({
@@ -346,6 +351,13 @@ export const updateUserStatus = async (req: AuthRequest, res: Response, next: Ne
 
     user.status = status;
     await user.save();
+
+    // Also update the linked Employee's status to keep them in sync
+    if (user.employeeId) {
+      // Map user status to employee status (Employee doesn't have 'suspended', use 'inactive')
+      const employeeStatus = status === 'active' ? 'active' : 'inactive';
+      await Employee.findByIdAndUpdate(user.employeeId, { status: employeeStatus });
+    }
 
     res.status(200).json({
       status: 'success',
