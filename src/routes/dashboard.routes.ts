@@ -12,7 +12,7 @@ import {
 } from '../controllers/dashboard.controller';
 import { protect } from '../middleware/auth.middleware';
 
-const router = express.Router();
+const router = Router();
 
 // All dashboard routes require authentication
 router.use(protect);
