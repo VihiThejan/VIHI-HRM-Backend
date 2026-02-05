@@ -10,12 +10,12 @@ import {
   getTimeTrackingSummary,
   getComplianceAlerts
 } from '../controllers/dashboard.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { protect } from '../middleware/auth.middleware';
 
-const router = Router();
+const router = express.Router();
 
 // All dashboard routes require authentication
-router.use(authenticate);
+router.use(protect);
 
 // Dashboard statistics
 router.get('/stats', getDashboardStats);
