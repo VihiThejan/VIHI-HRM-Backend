@@ -30,6 +30,7 @@ import roleRoutes from './routes/role.routes';
 import userRoutes from './routes/user.routes';
 import googleDriveRoutes from './routes/googleDrive.routes';
 import downloadsRoutes from './routes/downloads.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
@@ -147,6 +148,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/recruitment', recruitmentRoutes);
 app.use('/api/leaves', leaveRoutes);
