@@ -10,6 +10,8 @@ export const PERMISSION_MODULES = [
   'payroll',
   'performance',
   'interns',
+  'diary',
+  'diary_review',
   'admin',
 ] as const;
 
