@@ -6,6 +6,8 @@ import { generateDiaryDocument, generateSignedDiaryPDF } from '../utils/document
 import { logger } from '../config/logger';
 import { AuthRequest } from '../middleware/auth.middleware';
 import * as googleDriveService from '../services/googleDrive.service';
+import fs from 'fs';
+import path from 'path';
 
 // Get or create current week's diary
 export const getCurrentWeekDiary = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -406,6 +408,7 @@ export const getPendingDiariesForSupervisor = async (req: AuthRequest, res: Resp
     // Check permissions
     const permissions = req.user?.permissions || [];
     const isAdminOrManager = permissions.includes('manage_interns') || permissions.includes('manage_employees');
+    const hasDiaryReviewPermission = permissions.includes('comment_intern_diary') || permissions.includes('review_intern_diary');
 
     let diaries;
 
@@ -432,6 +435,12 @@ export const getPendingDiariesForSupervisor = async (req: AuthRequest, res: Resp
       logger.info(`Supervisor ${effectiveSupervisorId} has ${supervisedInterns.length} interns`);
 
       const internIds = supervisedInterns.map(intern => intern._id);
+
+      // If user has no interns but has diary review permission, show empty list with message
+      if (internIds.length === 0 && hasDiaryReviewPermission) {
+        logger.info(`User ${effectiveSupervisorId} has diary review permission but no assigned interns`);
+        return res.json([]);
+      }
 
       diaries = await DiaryEntry.find({
         internId: { $in: internIds },
@@ -831,49 +840,69 @@ export const uploadInternWeekSubmission = async (req: AuthRequest, res: Response
       }
     }
 
-    // Ensure Week Folder exists
-    let weekFolderId = diary.googleDriveFolderId;
-
     // Fetch intern details if not already available
     const intern = await Employee.findById(internId);
     if (!intern) {
       return res.status(404).json({ message: 'Intern not found' });
     }
 
-    if (!weekFolderId) {
-      // Find or create intern root folder
-      const staffId = intern.staffId || intern.universityId || intern._id.toString();
-      const internFolderId = await googleDriveService.getOrCreateEmployeeFolder(
-        intern._id.toString(),
-        intern.name,
-        staffId,
-        true // isIntern
-      );
+    // Try to upload file to Drive, fallback to local storage if it fails
+    let documentUrl = '';
+    try {
+      // Ensure Week Folder exists
+      let weekFolderId = diary.googleDriveFolderId;
 
-      if (!intern.googleDriveFolderId) {
-        intern.googleDriveFolderId = internFolderId;
-        await intern.save();
+      if (!weekFolderId) {
+        // Find or create intern root folder
+        const staffId = intern.staffId || intern.universityId || intern._id.toString();
+        const internFolderId = await googleDriveService.getOrCreateEmployeeFolder(
+          intern._id.toString(),
+          intern.name,
+          staffId,
+          true // isIntern
+        );
+
+        if (!intern.googleDriveFolderId) {
+          intern.googleDriveFolderId = internFolderId;
+          await intern.save();
+        }
+
+        // Create week folder
+        weekFolderId = await googleDriveService.getOrCreateWeekFolder(
+          internFolderId,
+          diary.weekNumber,
+          diary.weekStartDate
+        );
+        diary.googleDriveFolderId = weekFolderId;
       }
 
-      // Create week folder
-      weekFolderId = await googleDriveService.getOrCreateWeekFolder(
-        internFolderId,
-        diary.weekNumber,
-        diary.weekStartDate
+      const driveFile = await googleDriveService.uploadFile(
+        file.originalname,
+        file.mimetype,
+        file.buffer,
+        weekFolderId
       );
-      diary.googleDriveFolderId = weekFolderId;
+      documentUrl = driveFile.webViewLink;
+      logger.info(`File uploaded to Google Drive: ${documentUrl}`);
+    } catch (driveError) {
+      logger.warn('Google Drive upload failed, saving to local storage:', driveError);
+      
+      // Fallback: Save to local uploads folder
+      const uploadsDir = path.join(__dirname, '../../uploads/diaries');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      const fileName = `diary_${diary._id}_${Date.now()}_${file.originalname}`;
+      const filePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(filePath, file.buffer);
+      
+      documentUrl = `/uploads/diaries/${fileName}`;
+      logger.info(`File saved locally: ${documentUrl}`);
     }
 
-    // Upload file to Drive
-    const driveFile = await googleDriveService.uploadFile(
-      file.originalname,
-      file.mimetype,
-      file.buffer,
-      weekFolderId
-    );
-
     // Update with submission details
-    diary.internSubmissionUrl = driveFile.webViewLink; // Use Drive Link
+    diary.internSubmissionUrl = documentUrl;
     diary.internSubmissionDate = new Date();
 
     // Crucial: Update status so it appears in supervisor's pending list

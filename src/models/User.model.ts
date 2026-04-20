@@ -6,6 +6,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   roleIds: mongoose.Types.ObjectId[];
+  permissionKeys: string[];  // Direct permissions assigned to user (in addition to role permissions)
   employeeId?: mongoose.Types.ObjectId;
   status: 'active' | 'inactive' | 'suspended';
   lastLogin?: Date;
@@ -38,6 +39,10 @@ const userSchema = new Schema<IUser>(
     roleIds: {
       type: [Schema.Types.ObjectId],
       ref: 'Role',
+      default: [],
+    },
+    permissionKeys: {
+      type: [String],
       default: [],
     },
     employeeId: {

@@ -54,6 +54,7 @@ const permissions = [
   { key: 'track_own_time', module: 'interns', action: 'create', description: 'Track own time entries' },
   { key: 'view_interns', module: 'interns', action: 'view', description: 'View intern time tracking' },
   { key: 'comment_intern_diary', module: 'interns', action: 'comment', description: 'Comment on intern diaries' },
+  { key: 'review_intern_diary', module: 'diary_review', action: 'view', description: 'Review and sign intern diaries' },
   { key: 'manage_interns', module: 'interns', action: 'manage', description: 'Full intern management' },
 
   // Admin
@@ -197,13 +198,27 @@ export const seedPermissionsAndRoles = async () => {
   try {
     logger.info('🌱 Starting permissions and roles seeding...');
 
-    // Seed permissions
+    // Seed permissions - use upsert to add any new permissions
     const existingPermissions = await Permission.countDocuments();
     if (existingPermissions === 0) {
       await Permission.insertMany(permissions);
       logger.info(`✅ Seeded ${permissions.length} permissions`);
     } else {
-      logger.info(`ℹ️  Permissions already exist (${existingPermissions} found)`);
+      // Check for and add any missing permissions
+      let addedCount = 0;
+      for (const perm of permissions) {
+        const exists = await Permission.findOne({ key: perm.key });
+        if (!exists) {
+          await Permission.create(perm);
+          addedCount++;
+          logger.info(`✅ Added missing permission: ${perm.key}`);
+        }
+      }
+      if (addedCount > 0) {
+        logger.info(`✅ Added ${addedCount} new permissions`);
+      } else {
+        logger.info(`ℹ️  Permissions already exist (${existingPermissions} found)`);
+      }
     }
 
     // Seed roles

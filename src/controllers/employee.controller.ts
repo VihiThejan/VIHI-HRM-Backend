@@ -2,7 +2,15 @@ import { Response, NextFunction } from 'express';
 import Employee from '../models/Employee.model';
 import User from '../models/User.model';
 import Role from '../models/Role.model';
+import Attendance from '../models/Attendance.model';
+import Leave from '../models/Leave.model';
+import Payroll from '../models/Payroll.model';
+import Performance from '../models/Performance.model';
+import DiaryEntry from '../models/DiaryEntry.model';
+import InternTimeTracking from '../models/InternTimeTracking.model';
+import TimeTrackingSession from '../models/TimeTrackingSession.model';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { logger } from '../config/logger';
 
 // Map old role names to new RBAC role names
 const roleToRBACMapping: { [key: string]: string } = {
@@ -323,17 +331,15 @@ export const updateEmployee = async (req: AuthRequest, res: Response, next: Next
   }
 };
 
-// @desc    Delete employee
+// @desc    Delete employee (hard delete with cascade)
 // @route   DELETE /api/employees/:id
 // @access  Private (Admin/CEO)
 export const deleteEmployee = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const employee = await Employee.findByIdAndUpdate(
-      req.params.id,
-      { status: 'inactive' },
-      { new: true }
-    );
-
+    const employeeId = req.params.id;
+    
+    // Check if employee exists
+    const employee = await Employee.findById(employeeId);
     if (!employee) {
       return res.status(404).json({
         status: 'error',
@@ -341,9 +347,37 @@ export const deleteEmployee = async (req: AuthRequest, res: Response, next: Next
       });
     }
 
+    logger.info(`Starting cascade delete for employee: ${employee.name} (${employeeId})`);
+
+    // Cascade delete all related data
+    const deleteResults = await Promise.allSettled([
+      Attendance.deleteMany({ employeeId }),
+      Leave.deleteMany({ employeeId }),
+      Payroll.deleteMany({ employeeId }),
+      Performance.deleteMany({ employeeId }),
+      DiaryEntry.deleteMany({ internId: employeeId }),
+      InternTimeTracking.deleteMany({ internId: employeeId }),
+      TimeTrackingSession.deleteMany({ userId: employeeId }),
+      User.deleteOne({ employeeId }),
+    ]);
+
+    // Log deletion results
+    const collections = ['Attendance', 'Leave', 'Payroll', 'Performance', 'DiaryEntry', 'InternTimeTracking', 'TimeTrackingSession', 'User'];
+    deleteResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        logger.info(`Deleted ${result.value.deletedCount || 0} ${collections[index]} records`);
+      } else {
+        logger.warn(`Failed to delete ${collections[index]} records: ${result.reason}`);
+      }
+    });
+
+    // Finally delete the employee
+    await Employee.findByIdAndDelete(employeeId);
+    logger.info(`Employee ${employee.name} (${employeeId}) permanently deleted`);
+
     res.status(200).json({
       status: 'success',
-      message: 'Employee deleted successfully',
+      message: 'Employee and all related data permanently deleted',
     });
   } catch (error) {
     next(error);

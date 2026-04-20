@@ -5,6 +5,7 @@ import {
   createUser,
   updateUser,
   updateUserRoles,
+  updateUserPermissions,
   deleteUser,
   resetUserPassword,
   updateUserStatus,
@@ -29,6 +30,7 @@ router.route('/:id')
   .delete(deleteUser);
 
 router.put('/:id/roles', updateUserRoles);
+router.put('/:id/permissions', updateUserPermissions);
 router.put('/:id/password', resetUserPassword);
 router.put('/:id/status', updateUserStatus);
 router.get('/:id/permissions', getUserPermissions);

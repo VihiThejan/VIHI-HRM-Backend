@@ -116,7 +116,12 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     }
 
     // Try to find associated User for RBAC
-    let user = await User.findOne({ employeeId: employee._id }).select('+password');
+    let user = await User.findOne({ employeeId: employee._id }).select('+password +permissionKeys');
+
+    console.log('🔐 Login - Employee:', employee.name, 'User record found:', !!user);
+    if (user) {
+      console.log('🔐 Login - User permissionKeys:', user.permissionKeys);
+    }
 
     if (user) {
       // User has RBAC roles, use those
@@ -128,9 +133,11 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
         });
       }
 
-      // Fetch roles and permissions
+      // Fetch roles and permissions (combine role permissions + direct user permissions)
       const roles = await Role.find({ _id: { $in: user.roleIds } });
-      const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
+      const rolePermissions = roles.flatMap(r => r.permissionKeys);
+      const userDirectPermissions = user.permissionKeys || [];
+      const permissionKeys = [...new Set([...rolePermissions, ...userDirectPermissions])];
 
       // Debug logging
       console.log('🔐 Login - User:', employee.name, '(' + employee.staffId + ')');
@@ -232,9 +239,11 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
     };
 
     if (user) {
-      // User has RBAC roles
+      // User has RBAC roles - combine role permissions + direct user permissions
       const roles = await Role.find({ _id: { $in: user.roleIds } });
-      const permissionKeys = [...new Set(roles.flatMap(r => r.permissionKeys))];
+      const rolePermissions = roles.flatMap(r => r.permissionKeys);
+      const userDirectPermissions = user.permissionKeys || [];
+      const permissionKeys = [...new Set([...rolePermissions, ...userDirectPermissions])];
 
       responseData.roles = roles.map(r => ({
         _id: r._id,

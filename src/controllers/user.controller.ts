@@ -31,6 +31,8 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
       
       return {
         ...userObj,
+        // Include direct permissions
+        permissionKeys: userObj.permissionKeys || [],
         // Show designation/position as roles if available, otherwise show RBAC roles
         roles: designationRole 
           ? [{ _id: 'designation', name: designationRole, description: 'Employee Designation' }]
@@ -247,6 +249,56 @@ export const updateUserRoles = async (req: AuthRequest, res: Response, next: Nex
   }
 };
 
+// @desc    Update user direct permissions
+// @route   PUT /api/admin/users/:id/permissions
+// @access  Private (manage_users)
+export const updateUserPermissions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { permissionKeys } = req.body;
+
+    if (!Array.isArray(permissionKeys)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'permissionKeys must be an array',
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found',
+      });
+    }
+
+    // Validate all permissions exist
+    if (permissionKeys.length > 0) {
+      const Permission = require('../models/Permission.model').default;
+      const permissions = await Permission.find({ key: { $in: permissionKeys } });
+      if (permissions.length !== permissionKeys.length) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'One or more invalid permission keys',
+        });
+      }
+    }
+
+    user.permissionKeys = permissionKeys;
+    await user.save();
+
+    const updatedUser = await User.findById(user._id)
+      .populate('roleIds', 'name description permissionKeys')
+      .select('-password');
+
+    res.status(200).json({
+      status: 'success',
+      data: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Delete user
 // @route   DELETE /api/admin/users/:id
 // @access  Private (manage_users)
@@ -376,7 +428,7 @@ export const getUserPermissions = async (req: AuthRequest, res: Response, next: 
   try {
     const user = await User.findById(req.params.id)
       .populate('roleIds', 'name permissionKeys')
-      .select('name email');
+      .select('name email permissionKeys');
 
     if (!user) {
       return res.status(404).json({
@@ -395,6 +447,13 @@ export const getUserPermissions = async (req: AuthRequest, res: Response, next: 
       allPermissionKeys.push(...role.permissionKeys);
     });
 
+    // Add direct user permissions
+    const directPermissions = user.permissionKeys || [];
+    if (directPermissions.length > 0) {
+      permissionsByRole['Direct Permissions'] = directPermissions;
+      allPermissionKeys.push(...directPermissions);
+    }
+
     // Deduplicate permissions
     const uniquePermissions = [...new Set(allPermissionKeys)];
 
@@ -408,6 +467,7 @@ export const getUserPermissions = async (req: AuthRequest, res: Response, next: 
         },
         roles: roles.map((r: any) => ({ _id: r._id, name: r.name })),
         permissionsByRole,
+        directPermissions,
         effectivePermissions: uniquePermissions.sort(),
         totalPermissions: uniquePermissions.length,
       },
